@@ -19,6 +19,12 @@
 #define FALSE 0
 #define TRUE 1
 
+#define FLAG (0x7E)
+#define A (0x03)
+#define C_SET (0X03)
+#define C_DISC (0x0B)
+#define C_UA (0x07)
+
 #define BUF_SIZE 256
 
 volatile int STOP = FALSE;
@@ -90,41 +96,33 @@ int main(int argc, char *argv[])
     printf("New termios structure set\n");
 
     // Create string to send
-    unsigned char buf[BUF_SIZE] = {0};
-
-    /*for (int i = 0; i < BUF_SIZE; i++)
-    {
-        buf[i] = 'a' + i % 26;
-    }*/
-
-    printf("Enter string here: \n");
-    gets(buf);
-
-    printf("Length of buffer : %ld \n", strlen(buf));
-
-    // In non-canonical mode, '\n' does not end the writing.
-    // Test this condition by placing a '\n' in the middle of the buffer.
-    // The whole buffer must be sent even with the '\n'.
-    //buf[5] = '\n';
-
-    int bytes = write(fd, buf, strlen(buf));
-    printf("%d bytes written\n", bytes);
+    unsigned char SET[BUF_SIZE] = {FLAG};
 
     // Wait until all bytes have been written to the serial port
     sleep(1);
 
+    for(int i = 0; i < strlen(SET); i++) {
+        printf("%x", SET[i]);
+    }
+    printf("\n");
 
-    unsigned char buffer[BUF_SIZE + 1] = {0}; // +1: Save space for the final '\0' char
+    int bytes = write(fd, SET, strlen(SET));
+
+    unsigned char check[BUF_SIZE];
 
     while (STOP == FALSE)
     {
         // Returns after 5 chars have been input
-        int bytes = read(fd, buffer, BUF_SIZE);
-    
-        printf(":%s:%d\n", buffer, bytes);
+        int byte = read(fd, check, strlen(check));
 
+        printf("%d\n", strlen(check));
+    
+        for(int i = 0; i < strlen(check); i++) {
+            printf("%x %d \n", check[i], i);
+        }
+        printf("\n");
         
-        if (strlen(buf) == strlen(buffer))
+        if (strlen(SET) == strlen(check))
             STOP = TRUE;
 
     }

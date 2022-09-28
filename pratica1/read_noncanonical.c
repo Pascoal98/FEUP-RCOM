@@ -19,6 +19,9 @@
 #define FALSE 0
 #define TRUE 1
 
+#define FLAG (0x7E)
+#define A (0x01)
+
 #define BUF_SIZE 256
 
 volatile int STOP = FALSE;
@@ -89,24 +92,24 @@ int main(int argc, char *argv[])
     printf("New termios structure set\n");
 
     // Loop for input
-    unsigned char buf[BUF_SIZE + 1] = {0}; // +1: Save space for the final '\0' char
-
+    unsigned char UA[BUF_SIZE] = {}; // +1: Save space for the final '\0' char
+    
     while (STOP == FALSE)
     {
         // Returns after 5 chars have been input
-        int bytes = read(fd, buf, BUF_SIZE);
+        int bytes = read(fd, UA, BUF_SIZE);
         //buf[bytes] = '\0'; // Set end of string to '\0', so we can printf
+        
+        printf("%d\n", strlen(UA));
+        for(int i = 0; i < strlen(UA); i++) {
+            printf("%x", UA[i]);
+        }
+        printf("\n");
+        printf("%d\n", strlen(UA));
+        int bytesSent = write(fd, UA, strlen(UA));
 
-        printf(":%s:%d\n", buf, bytes);
-
-
-        int bytesSent = write(fd, buf, strlen(buf));
-
-        if (buf[0] == 'z')
+        if (UA[0] == 'z')
             STOP = TRUE;
-
-        memset(buf, 0, sizeof(buf));
-
     }
 
     // The while() cycle should be changed in order to respect the specifications
