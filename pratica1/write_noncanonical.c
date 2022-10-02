@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
 
 // Baudrate settings are defined in <asm/termbits.h>, which is
 // included by <termios.h>
@@ -29,6 +30,16 @@
 
 volatile int STOP = FALSE;
 
+int fd;
+
+void alarmHandler(int signal) {
+
+    close(fd);
+    printf("Timeout\n");
+    STOP = TRUE;
+
+}
+
 int main(int argc, char *argv[])
 {
     // Program usage: Uses either COM1 or COM2
@@ -46,7 +57,7 @@ int main(int argc, char *argv[])
 
     // Open serial port device for reading and writing, and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
-    int fd = open(serialPortName, O_RDWR | O_NOCTTY);
+    fd = open(serialPortName, O_RDWR | O_NOCTTY);
 
     if (fd < 0)
     {
@@ -96,13 +107,13 @@ int main(int argc, char *argv[])
     printf("New termios structure set\n");
 
     // Create string to send
-    unsigned char SET[BUF_SIZE] = {FLAG};
+    unsigned char SET[BUF_SIZE] = {FLAG, A};
 
     // Wait until all bytes have been written to the serial port
     sleep(1);
 
     for(int i = 0; i < strlen(SET); i++) {
-        printf("%x", SET[i]);
+        printf("%x ", SET[i]);
     }
     printf("\n");
 
@@ -110,22 +121,33 @@ int main(int argc, char *argv[])
 
     unsigned char check[BUF_SIZE];
 
+    (void)signal(SIGALRM, alarmHandler);
+    
+
     while (STOP == FALSE)
     {
+        
+        alarm(3);
+        printf("%d inside 1\n", STOP);
         // Returns after 5 chars have been input
         int byte = read(fd, check, strlen(check));
 
         printf("%d\n", strlen(check));
-    
+
         for(int i = 0; i < strlen(check); i++) {
             printf("%x %d \n", check[i], i);
         }
         printf("\n");
         
-        if (strlen(SET) == strlen(check))
+        if (SET[0] == check[0]) {
             STOP = TRUE;
+            alarm(0);
+        }
+        printf("%d inside\n", STOP);
 
     }
+
+    printf("%d outside\n", STOP);
     
     // Restore the old port settings
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)

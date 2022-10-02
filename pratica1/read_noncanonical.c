@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
 
         if (UA[0] == 'z')
             STOP = TRUE;
+
     }
 
     // The while() cycle should be changed in order to respect the specifications

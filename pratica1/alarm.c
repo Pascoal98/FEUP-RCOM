@@ -28,10 +28,12 @@ int main()
 
     while (alarmCount < 4)
     {
+        
         if (alarmEnabled == FALSE)
         {
             alarm(3); // Set alarm to be triggered in 3s
             alarmEnabled = TRUE;
+            printf("%d inside\n", alarmEnabled);
         }
     }
 
