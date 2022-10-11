@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
 
 // Baudrate settings are defined in <asm/termbits.h>, which is
 // included by <termios.h>
@@ -19,12 +20,34 @@
 #define FALSE 0
 #define TRUE 1
 
-#define FLAG (0x7E)
-#define A (0x01)
-
 #define BUF_SIZE 256
 
 volatile int STOP = FALSE;
+
+// Define tramas info
+#define FLAG ((unsigned char) 0x7E)
+#define A_SEND ((unsigned char) 0x03)
+#define A_RESPONSE ((unsigned char) 0x01)
+#define C_SET ((unsigned char) 0x03)
+#define C_DISC ((unsigned char) 0x0B)
+#define C_UA ((unsigned char) 0x07)
+
+int get_bbc1(unsigned int A, unsigned int C){
+    return A^C;
+}
+
+// Alarm Setup
+int alarmEnabled = FALSE;
+int alarmCount = 0;
+
+// Alarm function handler
+void alarmHandler(int signal)
+{
+    alarmEnabled = FALSE;
+    alarmCount++;
+
+    //printf("Alarm #%d\n", alarmCount);
+}
 
 int main(int argc, char *argv[])
 {
@@ -70,7 +93,7 @@ int main(int argc, char *argv[])
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
     newtio.c_cc[VTIME] = 0; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 1;  // Blocking read until 5 chars received
+    newtio.c_cc[VMIN] = 5;  // Blocking read until 5 chars received
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -92,29 +115,43 @@ int main(int argc, char *argv[])
     printf("New termios structure set\n");
 
     // Loop for input
-    unsigned char UA[BUF_SIZE] = {}; // +1: Save space for the final '\0' char
-    
-    while (STOP == FALSE)
-    {
-        // Returns after 5 chars have been input
-        int bytes = read(fd, UA, BUF_SIZE);
-        //buf[bytes] = '\0'; // Set end of string to '\0', so we can printf
-        
-        printf("%d\n", strlen(UA));
-        for(int i = 0; i < strlen(UA); i++) {
-            printf("%x", UA[i]);
+    unsigned char buf = 0;
+    unsigned char UA[] = {FLAG,A_RESPONSE,C_UA,get_bbc1(A_RESPONSE,C_UA),FLAG};
+    unsigned char SET[] = {FLAG,A_SEND,C_SET,get_bbc1(A_SEND,C_SET),FLAG};
+    unsigned char SET_RECEIVED[5];
+
+    // Set alarm function handler
+    (void)signal(SIGALRM, alarmHandler);
+
+    int ff = 0;
+    for(int i=0;ff < 2;i++){
+        int bytes = read(fd, &buf, 1);
+        if(buf == FLAG){
+            ff++;
         }
-        printf("\n");
-        printf("%d\n", strlen(UA));
-        int bytesSent = write(fd, UA, strlen(UA));
-
-        if (UA[0] == 'z')
-            STOP = TRUE;
-
+        else if(bytes < 1 && alarmEnabled == FALSE){
+            alarm(1);
+        }
+        SET_RECEIVED[i] = buf;
     }
 
-    // The while() cycle should be changed in order to respect the specifications
-    // of the protocol indicated in the Lab guide
+    printf("Got Set!\n");
+
+    /*while (alarmCount < 1)
+    {
+        if (alarmEnabled == FALSE)
+        {
+            alarm(1); // Set alarm to be triggered in 3s
+            alarmEnabled = TRUE;
+        }
+    }*/
+
+    char c;
+    printf("Click anywhere to send UA"); scanf("%c",&c);
+    int bytes = write(fd, UA, 5);
+    printf("%d bytes written\n", bytes);
+
+    sleep(1);
 
     // Restore the old port settings
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)

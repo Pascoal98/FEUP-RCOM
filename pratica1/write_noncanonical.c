@@ -20,25 +20,39 @@
 #define FALSE 0
 #define TRUE 1
 
-#define FLAG (0x7E)
-#define A (0x03)
-#define C_SET (0X03)
-#define C_DISC (0x0B)
-#define C_UA (0x07)
-
 #define BUF_SIZE 256
 
 volatile int STOP = FALSE;
 
-int fd;
+// Define tramas info
+#define FLAG ((unsigned char) 0x7E)
+#define A_SEND ((unsigned char) 0x03)
+#define A_RESPONSE ((unsigned char) 0x01)
+#define C_SET ((unsigned char) 0x03)
+#define C_DISC ((unsigned char) 0x0B)
+#define C_UA ((unsigned char) 0x07)
 
-void alarmHandler(int signal) {
-
-    close(fd);
-    printf("Timeout\n");
-    STOP = TRUE;
-
+int get_bbc1(unsigned int A, unsigned int C){
+    return A^C;
 }
+
+int compare_responses(unsigned char msg[], unsigned char msg_received[], int size){
+    return memcmp(msg, msg_received, size);
+}
+
+// Alarm Setup
+int alarmEnabled = FALSE;
+int alarmCount = 0;
+
+// Alarm function handler
+void alarmHandler(int signal)
+{
+    alarmEnabled = FALSE;
+    alarmCount++;
+
+    printf("#%d try\n", alarmCount);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -57,7 +71,7 @@ int main(int argc, char *argv[])
 
     // Open serial port device for reading and writing, and not as controlling tty
     // because we don't want to get killed if linenoise sends CTRL-C.
-    fd = open(serialPortName, O_RDWR | O_NOCTTY);
+    int fd = open(serialPortName, O_RDWR | O_NOCTTY);
 
     if (fd < 0)
     {
@@ -84,8 +98,8 @@ int main(int argc, char *argv[])
 
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
-    newtio.c_cc[VTIME] = 0; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 1;  // Blocking read until 5 chars received
+    newtio.c_cc[VTIME] = 30; // Inter-character timer unused
+    newtio.c_cc[VMIN] = 0;  // Blocking read until 5 chars received
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -106,49 +120,50 @@ int main(int argc, char *argv[])
 
     printf("New termios structure set\n");
 
-    // Create string to send
-    unsigned char SET[BUF_SIZE] = {FLAG, A};
+    // Create set to send
+    unsigned char SET[] = {FLAG,A_SEND,C_SET,get_bbc1(A_SEND,C_SET),FLAG};
+
+    char c;
+    printf("Click anywhere to send SET"); scanf("%c",&c);
+    int bytes = write(fd, SET, 5);
+    printf("%d bytes written\n", bytes);
 
     // Wait until all bytes have been written to the serial port
     sleep(1);
 
-    for(int i = 0; i < strlen(SET); i++) {
-        printf("%x ", SET[i]);
-    }
-    printf("\n");
+    // Get the UA back
+    unsigned char UA[] = {FLAG,A_RESPONSE,C_UA,get_bbc1(A_RESPONSE,C_UA),FLAG};
+    unsigned char UA_RECEIVED[5];
 
-    int bytes = write(fd, SET, strlen(SET));
+    int read_bytes = 0;
 
-    unsigned char check[BUF_SIZE];
-
+    // Set alarm function handler
     (void)signal(SIGALRM, alarmHandler);
-    
 
-    while (STOP == FALSE)
-    {
+    printf("Waiting for response\n---------------------\n");
+
+    for(int i=0;i<3;i++){
+        // Set an alarm for the 3 second timeout
+        if(alarmEnabled == FALSE) {
+            alarm(3);
+            alarmEnabled = TRUE;
+        } 
+        read_bytes = read(fd, UA_RECEIVED, 5);
         
-        alarm(3);
-        printf("%d inside 1\n", STOP);
-        // Returns after 5 chars have been input
-        int byte = read(fd, check, strlen(check));
-
-        printf("%d\n", strlen(check));
-
-        for(int i = 0; i < strlen(check); i++) {
-            printf("%x %d \n", check[i], i);
-        }
-        printf("\n");
+        // If the UA is found, verify if it's valid
+        if(read_bytes > 0 && compare_responses(UA, UA_RECEIVED, sizeof(UA)) == 0) break;
         
-        if (SET[0] == check[0]) {
-            STOP = TRUE;
-            alarm(0);
-        }
-        printf("%d inside\n", STOP);
-
+        printf("Response not received, sending another SET\n");
+        bytes = write(fd, SET, 5);
+        printf("%d bytes written\n---------------------\n", bytes);
     }
 
-    printf("%d outside\n", STOP);
-    
+    if(read_bytes > 0){ 
+        printf("UA received with Success!\n");
+    } else {
+        printf("Something went wrong...\n");
+    }
+
     // Restore the old port settings
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
     {
