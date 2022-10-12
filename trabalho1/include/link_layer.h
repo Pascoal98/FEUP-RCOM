@@ -4,6 +4,14 @@
 #ifndef _LINK_LAYER_H_
 #define _LINK_LAYER_H_
 
+//tramas info
+#define FLAG ((unsigned char) 0x7E)
+#define A_SEND ((unsigned char) 0x03)
+#define A_RESPONSE ((unsigned char) 0x01)
+#define C_SET ((unsigned char) 0x03)
+#define C_DISC ((unsigned char) 0x0B)
+#define C_UA ((unsigned char) 0x07)
+
 typedef enum
 {
     LlTx,
@@ -18,6 +26,10 @@ typedef struct
     int nRetransmissions;
     int timeout;
 } LinkLayer;
+
+enum state_t {S_START, S_FLAG, S_ADR, S_CTRL, S_BCC1, S_BCC2, S_END, S_REJ} state;
+
+
 
 // SIZE of maximum acceptable payload.
 // Maximum number of bytes that application layer should send to link layer
