@@ -20,6 +20,38 @@ unsigned char createBCC_data(unsigned char* frame, int length) {
   return bcc;
 }
 
+int createSupervisionFrame(unsigned char* frame, unsigned char control, LinkLayerRole role) {
+
+    frame[0] = FLAG;
+
+    if(role == LlTx) {
+        if(control == C_SET || control == C_DISC) {
+            frame[1] = A_SEND;
+        }
+        else if(control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1 ) {
+            frame[1] = A_RESPONSE;
+        }
+        else return 1;
+    }
+    else if(role == LlRx) {
+        if(control == C_SET || control == C_DISC) {
+            frame[1] = A_RESPONSE;
+        }
+        else if(control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1 ) {
+            frame[1] = A_RESPONSE;
+        }
+        else return 1;
+    }
+    else return 1;
+
+    frame[2] = control;
+
+    frame[3] = createBCC(frame[1], frame[2]);
+
+    frame[4] = FLAG;
+
+    return 0;
+} 
 
 int createInformationFrame(unsigned char* frame, unsigned char control, unsigned char* info, int infolength) {
 
