@@ -15,9 +15,19 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
     if (strcmp(role, "tx") == 0)
     { // check if transmitter
         l_layer.role = LlTx;
+        if(llopen(l_layer) != 0) {
+            llclose(1);
+            return;
+        }
+
+        unsigned char packet[256];
+
     }
     else
     { // receiver
         l_layer.role = LlRx;
     }
+
+    unsigned char* packet[MAX_PAYLOAD_SIZE];
+        
 }
