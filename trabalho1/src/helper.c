@@ -56,28 +56,28 @@ int byteStuffing(unsigned char* frame, int length) {
 
 
   
-  int finalLength = ;  //onde a informaçao a enviar começa
+  int header_jump = 4;  //onde a informaçao a enviar começa
 
  
-  for(int i = DATA_START; i < (length + 6); i++){
+  for(int i = 4; i < (length + 6); i++){
 
     if(aux[i] == FLAG && i != (length + 5)) {
-      frame[finalLength] = ESC_BYTE;
-      frame[finalLength+1] = BYTE_STUFFING_FLAG;
-      finalLength = finalLength + 2;
+      frame[header_jump] = ESC_BYTE;
+      frame[header_jump+1] = BYTE_STUFFING_FLAG;
+      header_jump = header_jump + 2;
     }
     else if(aux[i] == ESC_BYTE && i != (length + 5)) {
-      frame[finalLength] = ESC_BYTE;
-      frame[finalLength+1] = BYTE_STUFFING_ESCAPE;
-      finalLength = finalLength + 2;
+      frame[header_jump] = ESC_BYTE;
+      frame[header_jump+1] = BYTE_STUFFING_ESCAPE;
+      header_jump = header_jump + 2;
     }
     else{
-      frame[finalLength] = aux[i];
-      finalLength++;
+      frame[header_jump] = aux[i];
+      header_jump++;
     }
   }
 
-  return finalLength;
+  return header_jump;
 }
 
 
@@ -91,28 +91,28 @@ int byteDestuffing(unsigned char* frame, int length) {
     aux[i] = frame[i];
   }
 
-  int finalLength = DATA_START;
+  int header_jump = 4;
 
   // iterates through the aux buffer, and fills the frame buffer with destuffed content
-  for(int i = DATA_START; i < (length + 5); i++) {
+  for(int i = 4; i < (length + 5); i++) {
 
     if(aux[i] == ESC_BYTE){
       if (aux[i+1] == BYTE_STUFFING_ESCAPE) {
-        frame[finalLength] = ESC_BYTE;
+        frame[header_jump] = ESC_BYTE;
       }
       else if(aux[i+1] == BYTE_STUFFING_FLAG) {
-        frame[finalLength] = FLAG;
+        frame[header_jump] = FLAG;
       }
       i++;
-      finalLength++;
+      header_jump++;
     }
     else{
-      frame[finalLength] = aux[i];
-      finalLength++;
+      frame[header_jump] = aux[i];
+      header_jump++;
     }
   }
 
-  return finalLength;
+  return header_jump;
 }
 
 

@@ -4,6 +4,13 @@
 #ifndef _LINK_LAYER_H_
 #define _LINK_LAYER_H_
 
+//includes
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <termios.h>
+#include <stdlib.h>
+
 //tramas info
 #define FLAG ((unsigned char) 0x7E)
 #define A_SEND ((unsigned char) 0x03)
@@ -34,7 +41,8 @@ typedef struct
 enum state_t {S_START, S_FLAG, S_ADR, S_CTRL, S_BCC1, S_BCC2, S_END, S_REJ} state;
 
 
-
+int fd;
+struct termios oldtio;
 // SIZE of maximum acceptable payload.
 // Maximum number of bytes that application layer should send to link layer
 #define MAX_PAYLOAD_SIZE 1000

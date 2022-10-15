@@ -12,14 +12,12 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
     l_layer.nRetransmissions = nTries;
     l_layer.timeout = timeout;
 
-    int compare = strcmp(role, "tx");
-
     if (strcmp(role, "tx") == 0)
     { // check if transmitter
-        l_layer.role = role;
+        l_layer.role = LlTx;
     }
     else
     { // receiver
-        l_layer.role = role;
+        l_layer.role = LlRx;
     }
 }

@@ -5,6 +5,7 @@
 #define _APPLICATION_LAYER_H_
 
 #include "link_layer.h"
+#include <string.h>
 // Application layer main function.
 // Arguments:
 //   serialPort: Serial port name (e.g., /dev/ttyS0).
