@@ -12,6 +12,10 @@
 #define C_DISC ((unsigned char) 0x0B)
 #define C_UA ((unsigned char) 0x07)
 
+#define ESC_BYTE 0x7D
+#define BYTE_STUFFING_ESCAPE 0x5D
+#define BYTE_STUFFING_FLAG 0x5E
+
 typedef enum
 {
     LlTx,
