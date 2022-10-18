@@ -54,6 +54,7 @@ State state;
 struct termios oldtio;
 struct termios newtio;
 LinkLayer linker;
+
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
 
@@ -77,7 +78,13 @@ void state_machine_handler(State *state, unsigned char byte)
     case S_ADR:
         if (byte == C_SET || byte == C_DISC || byte == C_UA || byte == C_RR_0 || byte == C_RR_1 || byte == C_RJ_0 || byte == C_RJ_1)
         {
+            state->state = S_CTRL;
+            state->ctrl = byte;
+            state->bcc = createBCC_header(state->adr, state->ctrl);
+            break;
         }
+        state->state = S_START;
+        break;
     case S_CTRL:
     case S_BCC1:
     case S_BCC2:
@@ -229,7 +236,7 @@ int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLaye
         }
         else if (control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1)
         {
-            frame[1] = A_RESPONSE;
+            frame[1] = A_SEND;
         }
         else
             return 1;
