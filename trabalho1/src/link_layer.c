@@ -346,15 +346,40 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         trama->bcc = createBCC_header(trama->bcc, byte);
         break;
     case S_ESC:
+        if (byte == BYTE_STUFFING_ESCAPE)
+        {
+            if (trama->bcc == FLAG)
+            {
+                trama->state = S_BCC2;
+                break;
+            }
+            trama->bcc = createBCC_header(trama->bcc, FLAG);
+            trama->data[trama->data_size++] = FLAG;
+            trama->state = S_DATA;
+            break;
+        }
+        if (byte == BYTE_STUFFING_FLAG)
+        {
+            if (trama->bcc == ESC_BYTE)
+            {
+                trama->state = S_BCC2;
+                break;
+            }
+            trama->bcc = createBCC_header(trama->bcc, ESC_BYTE);
+            trama->data[trama->data_size++] = ESC_BYTE;
+            trama->state = S_DATA;
+            break;
+        }
         if (byte == FLAG)
         {
-            trama->state = S_FLAG;
+            trama->state = S_REJ;
             break;
         }
         trama->state = S_START;
         break;
     case S_END:
         trama->state = S_START;
+        break;
     case S_REJ:
         break;
     }
