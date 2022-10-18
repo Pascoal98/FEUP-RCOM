@@ -3,13 +3,14 @@
 #include "link_layer.h"
 
 // includes
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <termios.h>
 #include <stdlib.h>
-#include <string.h>
+#include <signal.h>
 
 // tramas info
 #define FLAG ((unsigned char)0x7E)
@@ -22,6 +23,8 @@
 #define C_RR_1 0x85
 #define C_RJ_0 0x01
 #define C_RJ_1 0x81
+#define C_DATA_0 0x00
+#define C_DATA_1 0x40
 
 #define ESC_BYTE 0x7D
 #define BYTE_STUFFING_ESCAPE 0x5D
@@ -237,6 +240,7 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         if (byte == FLAG)
             trama->state = S_FLAG;
         break;
+
     case S_FLAG:
         if (byte == A_SEND || byte == A_RESPONSE)
         {
@@ -244,8 +248,11 @@ void state_machine_handler(Trama *trama, unsigned char byte)
             trama->adr = byte;
             break;
         }
+        if (byte == FLAG)
+            break;
         trama->state = S_START;
         break;
+
     case S_ADR:
         if (byte == C_SET || byte == C_DISC || byte == C_UA || byte == C_RR_0 || byte == C_RR_1 || byte == C_RJ_0 || byte == C_RJ_1)
         {
@@ -254,23 +261,83 @@ void state_machine_handler(Trama *trama, unsigned char byte)
             trama->bcc = createBCC_header(trama->adr, trama->ctrl);
             break;
         }
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
         trama->state = S_START;
         break;
+
     case S_CTRL:
         if (byte == trama->bcc)
         {
             trama->state = S_BCC1;
             break;
         }
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
         trama->state = S_START;
         break;
+
     case S_BCC1:
+        if (byte == FLAG)
+        {
+            if (trama->ctrl == C_DATA_0 || trama->ctrl == C_DATA_1)
+            {
+                trama->state = S_FLAG;
+                break;
+            }
+            trama->state = S_END;
+            break;
+        }
+        if ((trama->ctrl == C_DATA_0 || trama->ctrl == C_DATA_1) && trama->data != NULL)
+        {
+            trama->data_size = 0;
+            if (byte == ESC_BYTE)
+            {
+                trama->state = S_ESC;
+                break;
+            }
+            trama->data[trama->data_size++] = byte;
+            trama->bcc = byte;
+            trama->state = S_DATA;
+            break;
+        }
+        trama->state = S_START;
+        break;
+
     case S_BCC2:
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
+        trama->state = S_START;
+        break;
     case S_DATA:
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
+        trama->state = S_START;
+        break;
     case S_ESC:
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
+        trama->state = S_START;
+        break;
     case S_END:
         trama->state = S_START;
     case S_REJ:
+        break;
     }
 }
 
