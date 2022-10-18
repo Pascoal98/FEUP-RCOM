@@ -311,6 +311,11 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
 
     case S_BCC2:
+        if (byte == 0)
+        {
+            trama->data[trama->data_size++] = trama->bcc;
+            trama->bcc = 0;
+        }
         if (byte == FLAG)
         {
             trama->state = S_FLAG;
