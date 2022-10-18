@@ -449,6 +449,19 @@ int llopen(LinkLayer connectionParameters)
         exit(-1);
     }
 
+    (void)signal(SIGALRM, alarmHandler);
+
+    if (linker.role == LlTx)
+    {
+        int flag = 0;
+        trama.state = S_START;
+
+        while (alarmCount < linker.nRetransmissions && !flag)
+        {
+            alarm(linker.timeout);
+            alarmEnabled = TRUE;
+        }
+    }
     return 1;
 }
 
