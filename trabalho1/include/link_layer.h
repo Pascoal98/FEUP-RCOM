@@ -4,31 +4,6 @@
 #ifndef _LINK_LAYER_H_
 #define _LINK_LAYER_H_
 
-// includes
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <termios.h>
-#include <stdlib.h>
-#include <string.h>
-
-// tramas info
-#define FLAG ((unsigned char)0x7E)
-#define A_SEND ((unsigned char)0x03)
-#define A_RESPONSE ((unsigned char)0x01)
-#define C_SET ((unsigned char)0x03)
-#define C_DISC ((unsigned char)0x0B)
-#define C_UA ((unsigned char)0x07)
-#define C_RR_0 0x05
-#define C_RR_1 0x85
-#define C_RJ_0 0x01
-#define C_RJ_1 0x81
-
-#define ESC_BYTE 0x7D
-#define BYTE_STUFFING_ESCAPE 0x5D
-#define BYTE_STUFFING_FLAG 0x5E
-
 typedef enum
 {
     LlTx,
@@ -44,33 +19,6 @@ typedef struct
     int timeout;
 } LinkLayer;
 
-typedef struct
-{
-    enum state_t
-    {
-        S_START,
-        S_FLAG,
-        S_ADR,
-        S_CTRL,
-        S_BCC1,
-        S_BCC2,
-        S_DATA,
-        S_ESC,
-        S_END,
-        S_REJ
-    } state;
-    unsigned char adr;
-    unsigned char ctrl;
-    unsigned char bcc;
-    unsigned char *data,
-        unsigned int data_size;
-} State;
-
-int fd;
-State state;
-struct termios oldtio;
-struct termios newtio;
-LinkLayer linker;
 // SIZE of maximum acceptable payload.
 // Maximum number of bytes that application layer should send to link layer
 #define MAX_PAYLOAD_SIZE 1000
