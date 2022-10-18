@@ -1,6 +1,8 @@
 // Application layer protocol implementation
 
 #include "application_layer.h"
+#include "link_layer.h"
+#include <string.h>
 
 void applicationLayer(const char *serialPort, const char *role, int baudRate, int nTries, int timeout, const char *filename)
 {
@@ -15,19 +17,18 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
     if (strcmp(role, "tx") == 0)
     { // check if transmitter
         l_layer.role = LlTx;
-        if(llopen(l_layer) != 0) {
+        if (llopen(l_layer) != 0)
+        {
             llclose(1);
             return;
         }
 
         unsigned char packet[256];
-
     }
     else
     { // receiver
         l_layer.role = LlRx;
     }
 
-    unsigned char* packet[MAX_PAYLOAD_SIZE];
-        
+    unsigned char *packet[MAX_PAYLOAD_SIZE];
 }

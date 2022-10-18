@@ -58,6 +58,19 @@ struct termios oldtio;
 struct termios newtio;
 LinkLayer linker;
 
+// Alarm Setup
+int alarmEnabled = FALSE;
+int alarmCount = 0;
+
+// Alarm function handler
+void alarmHandler(int signal)
+{
+    alarmEnabled = FALSE;
+    alarmCount++;
+
+    // printf("Alarm #%d\n", alarmCount);
+}
+
 // MISC
 #define _POSIX_SOURCE 1 // POSIX compliant source
 
