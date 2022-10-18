@@ -321,15 +321,29 @@ void state_machine_handler(Trama *trama, unsigned char byte)
             trama->state = S_FLAG;
             break;
         }
-        trama->state = S_START;
+        trama->data[trama->data_size++] = trama->bcc;
+        trama->data[trama->data_size++] = byte;
+        trama->bcc = byte;
+        trama->state = S_DATA;
         break;
     case S_DATA:
-        if (byte == FLAG)
+        if (byte == trama->bcc)
         {
-            trama->state = S_FLAG;
+            trama->state = S_BCC2;
             break;
         }
-        trama->state = S_START;
+        if (byte == ESC_BYTE)
+        {
+            trama->state = S_ESC;
+            break;
+        }
+        if (byte == FLAG)
+        {
+            trama->state = S_REJ;
+            break;
+        }
+        trama->data[trama->data_size++] = byte;
+        trama->bcc = createBCC_header(trama->bcc, byte);
         break;
     case S_ESC:
         if (byte == FLAG)
