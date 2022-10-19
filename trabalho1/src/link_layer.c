@@ -45,12 +45,15 @@ typedef struct
         S_END,
         S_REJ
     } state;
+    unsigned char flag;
     unsigned char adr;
     unsigned char ctrl;
     unsigned char bcc;
+    unsigned char bbc2;
     unsigned char *data;
     unsigned int data_size;
 } Trama;
+
 
 int fd;
 Trama trama;
@@ -81,6 +84,32 @@ void alarmHandler(int signal)
 // ^ = XOR
 
 // bbc1
+/* 
+@param address address byte
+@param control control byte
+
+
+*/
+
+int sendFrame(int fd, unsigned char *frame, int length)
+{
+    if (int n = write(fd, &frame, length) <= 0)
+        return -1;  //ERROR
+
+    return n; 
+}
+
+//read a byte from a fd
+int readByte(int fd, unsigned char* byte)
+{
+    if (read(fd, byte, sizeof(unsigned char)) <= 0)
+        return -1; //ERROR
+
+    return 0;
+}
+
+
+
 unsigned char createBCC_header(unsigned char address, unsigned char control)
 {
     return address ^ control;
@@ -143,6 +172,7 @@ int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLaye
     return 0;
 }
 
+
 int createInformationFrame(unsigned char *frame, unsigned char control, unsigned char *info, int infolength)
 {
 
@@ -159,7 +189,7 @@ int createInformationFrame(unsigned char *frame, unsigned char control, unsigned
         frame[i + 4] = info[i];
     }
 
-    unsigned bcc2 = createBCC_data(info, infolength);
+    unsigned char bcc2 = createBCC_data(info, infolength);
 
     frame[infolength + 4] = bcc2;
 
@@ -167,6 +197,7 @@ int createInformationFrame(unsigned char *frame, unsigned char control, unsigned
 
     return 0;
 }
+
 
 int byteStuffing(unsigned char *frame, int length)
 {
@@ -397,6 +428,66 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
     }
 }
+
+
+
+int readSupervisionFrame(unsigned char* frame, )
+{
+
+    Trama super;
+
+    super.flag = frame[0]
+
+    super.adr = frame[1];
+
+    super.ctrl = frame[2];
+
+    super.bcc = frame[3];
+
+    
+
+
+
+}
+
+
+
+
+int readInformationFrame(unsigned char* frame,)
+{
+
+    Trama info;
+
+    info.flag = frame[0];
+
+    info.adr = frame[1];
+
+    info.ctrl = frame[2];
+
+    unsigned char bbc1 = frame[3];
+
+    int ln = sizeof(frame) / sizeof(frame[0]);
+
+    for (int i = 4; i < (ln); i++)
+    {
+        if (frame[i] == info.flag)
+        {
+            info.bcc2 = frame[i - 1];
+            info.data_size = (i - 2) - 3; 
+
+            memcpy(info.data, &frame[4], info.data_size*sizeof(*frame)); //not entirely sure
+
+        }
+    }
+
+
+
+    // ^ go from bbc1 to bbc2 
+
+
+}
+
+
 
 ////////////////////////////////////////////////
 // LLOPEN
