@@ -13,29 +13,7 @@
 #include <signal.h>
 #include <stdbool.h>
 
-typedef struct
-{
-    enum state_t
-    {
-        S_START,
-        S_FLAG,
-        S_ADR,
-        S_CTRL,
-        S_BCC1,
-        S_BCC2,
-        S_DATA,
-        S_ESC,
-        S_END,
-        S_REJ
-    } state;
-    unsigned char flag;
-    unsigned char adr;
-    unsigned char ctrl;
-    unsigned char bcc;
-    unsigned char bbc2;
-    unsigned char *data;
-    unsigned int data_size;
-} Trama;
+
 
 int fd;
 Trama trama;
@@ -292,31 +270,32 @@ int llwrite(int fd, const unsigned char *buf, int bufSize)
     else
         controlByte = C_DATA_1;
 */
-    if (createInformationFrame(linker.frame, controlByte, buf, bufSize) != 0)
+    if (createInformationFrame(trama.data, controlByte, buf, bufSize) != 0)
     {
-        }
 
     int fullLength;
     // STUFF IT
-    if ((fullLength = byteStuffing(linker.frame, bufSize)) < 0)
+    if ((fullLength = byteStuffing(trama.data, bufSize)) < 0)
     {
     }
 
-    linker.framelen = fullLength;
+    trama.data_size = fullLength;
 
     bool dataSent = false;
 
     while (!dataSent)
     {
         int written;
-        if ((written = sendFrame(fd, linker.frame, linker.framelen)) == -1)
+        if ((written = sendFrame(fd, trama.data, trama.data_size)) == -1)
         {
         }
 
         // TO BE FINISHED
 
-        return 0;
+        
     }
+    
+    return 0;
 }
 
 ////////////////////////////////////////////////
@@ -325,6 +304,51 @@ int llwrite(int fd, const unsigned char *buf, int bufSize)
 int llread(unsigned char *packet)
 {
     // TODO
+
+    //receive and read stuuf (create trama)
+
+
+    int fullLength;
+    if (fullLength = byteDestuffing(trama.data, trama.data_size) < 0)
+    {
+
+    }
+
+    unsigned char bcc2;
+
+    if (bcc2 = createBCC_data(trama.data, trama.data_size))
+    {
+
+    }
+
+    if (bcc2 != trama.bcc2)
+    {
+        //not good
+    }
+
+    //good
+
+    Trama super; 
+    if (createSupervisionFrame(super, control, linker.role))
+    {
+
+    }
+
+    
+
+    bool dataSent = false;
+
+    while (!dataSent)
+    {
+        int written;
+        if ((written = sendFrame(fd, ssuper.data, super.data_size)) == -1)
+        {
+        }
+
+        // TO BE FINISHED
+
+        return 0;
+    }
 
     return 0;
 }

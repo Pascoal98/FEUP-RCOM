@@ -52,20 +52,24 @@ unsigned char createBCC_data(unsigned char *frame, int length)
     return bcc;
 }
 
-int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLayerRole role)
+int createSupervisionFrame(Trama *trama, unsigned char control, LinkLayerRole role)
 {
 
-    frame[0] = FLAG;
+    trama.data[0] = FLAG;
+    trama.flag = FLAG;
 
     if (role == LlTx)
     {
         if (control == C_SET || control == C_DISC)
         {
-            frame[1] = A_SEND;
+            trama.data[1] = A_SEND;
+            trama.adr = A_SEND;
         }
         else if (control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1)
         {
-            frame[1] = A_RESPONSE;
+            trama.data[1] = A_RESPONSE;
+            trama.adr = A_RESPONSE;
+
         }
         else
             return 1;
@@ -74,11 +78,13 @@ int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLaye
     {
         if (control == C_SET || control == C_DISC)
         {
-            frame[1] = A_RESPONSE;
+            trama.data[1] = A_RESPONSE;
+            trama.adr = A_RESPONSE;
         }
         else if (control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1)
         {
-            frame[1] = A_SEND;
+            trama.data[1] = A_SEND;
+            trama.adr = A_SEND;
         }
         else
             return 1;
@@ -86,36 +92,48 @@ int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLaye
     else
         return 1;
 
-    frame[2] = control;
+    trama.data[2] = control;
+    trama.ctrl = control;
 
-    frame[3] = createBCC_header(frame[1], frame[2]);
+    unsigned char bcc = createBCC_header(frame[1], frame[2]);
+    trama.data[3] = bcc;
+    trama.bcc = bcc;
 
-    frame[4] = FLAG;
+    trama.data[4] = FLAG;
 
     return 0;
 }
 
-int createInformationFrame(unsigned char *frame, unsigned char control, unsigned char *info, int infolength)
+int createInformationFrame(Trama *trama, unsigned char *frame, unsigned char control, unsigned char *info, int infolength)
 {
 
-    frame[0] = FLAG;
+    trama.data[0] = FLAG;
+    trama.flag = FLAG;
 
-    frame[1] = A_SEND;
+    trama.data[1] = A_SEND;
+    trama.adr = A_SEND;
 
-    frame[2] = control;
+    trama.data[2] = control;
+    trama.ctrl = control;
 
-    frame[3] = createBCC_header(frame[1], frame[2]);
+    unsigned char bcc1 = createBCC_header(trama.data[1], trama.data[2]);
+    trama.data[3] = bcc1;
+    trama.bcc = bcc1;
 
     for (int i = 0; i < infolength; i++)
     {
-        frame[i + 4] = info[i];
+        trama.data[i + 4] = info[i];
     }
+
 
     unsigned char bcc2 = createBCC_data(info, infolength);
 
-    frame[infolength + 4] = bcc2;
+    trama.data[infolength + 4] = bcc2;
+    trama.bcc2 = bbc2;
 
-    frame[infolength + 5] = FLAG;
+    trama.data[infolength + 5] = FLAG;
+
+    trama.data_size = infolength + 6;
 
     return 0;
 }
