@@ -1,8 +1,6 @@
 
 #include "helper.h"
 
-
-
 ///////////////////////////////////////////
 // HELPER FUNCTIONS
 ///////////////////////////////////////////
@@ -10,7 +8,7 @@
 // ^ = XOR
 
 // bbc1
-/* 
+/*
 @param address address byte
 @param control control byte
 
@@ -19,22 +17,21 @@
 
 int sendFrame(int fd, unsigned char *frame, int length)
 {
-    if (int n = write(fd, &frame, length) <= 0)
-        return -1;  //ERROR
+    int n;
+    if (n = write(fd, &frame, length) <= 0)
+        return -1; // ERROR
 
-    return n; 
+    return n;
 }
 
-//read a byte from a fd
-int readByte(int fd, unsigned char* byte)
+// read a byte from a fd
+int readByte(int fd, unsigned char *byte)
 {
     if (read(fd, byte, sizeof(unsigned char)) <= 0)
-        return -1; //ERROR
+        return -1; // ERROR
 
     return 0;
 }
-
-
 
 unsigned char createBCC_header(unsigned char address, unsigned char control)
 {
@@ -98,7 +95,6 @@ int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLaye
     return 0;
 }
 
-
 int createInformationFrame(unsigned char *frame, unsigned char control, unsigned char *info, int infolength)
 {
 
@@ -123,7 +119,6 @@ int createInformationFrame(unsigned char *frame, unsigned char control, unsigned
 
     return 0;
 }
-
 
 int byteStuffing(unsigned char *frame, int length)
 {
@@ -202,7 +197,6 @@ int byteDestuffing(unsigned char *frame, int length)
     return header_jump;
 }
 
-
 /*
 
 int readSupervisionFrame(unsigned char* frame, )
@@ -218,7 +212,7 @@ int readSupervisionFrame(unsigned char* frame, )
 
     super.bcc = frame[3];
 
-    
+
 
 
 
@@ -247,7 +241,7 @@ int readInformationFrame(unsigned char* frame,)
         if (frame[i] == info.flag)
         {
             info.bcc2 = frame[i - 1];
-            info.data_size = (i - 2) - 3; 
+            info.data_size = (i - 2) - 3;
 
             memcpy(info.data, &frame[4], info.data_size*sizeof(*frame)); //not entirely sure
 
@@ -256,12 +250,9 @@ int readInformationFrame(unsigned char* frame,)
 
 
 
-    // ^ go from bbc1 to bbc2 
+    // ^ go from bbc1 to bbc2
 
 
 }
 
 */
-
-
-

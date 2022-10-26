@@ -1,11 +1,12 @@
 #ifndef _HELPER_H_
 #define _HELPER_H_
 
-
+#include "macros.h"
+#include "link_layer.h"
 
 int sendFrame(int fd, unsigned char *frame, int length);
 
-int readByte(int fd, unsigned char* byte);
+int readByte(int fd, unsigned char *byte);
 
 unsigned char createBCC_header(unsigned char address, unsigned char control);
 
@@ -18,3 +19,5 @@ int createInformationFrame(unsigned char *frame, unsigned char control, unsigned
 int byteStuffing(unsigned char *frame, int length);
 
 int byteDestuffing(unsigned char *frame, int length);
+
+#endif

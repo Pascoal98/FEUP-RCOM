@@ -1,6 +1,6 @@
 // Link layer protocol implementation
 
-#include "link_layer.h"
+#include "helper.h"
 
 // includes
 #include <string.h>
@@ -11,24 +11,7 @@
 #include <termios.h>
 #include <stdlib.h>
 #include <signal.h>
-
-// tramas info
-#define FLAG ((unsigned char)0x7E)
-#define A_SEND ((unsigned char)0x03)
-#define A_RESPONSE ((unsigned char)0x01)
-#define C_SET ((unsigned char)0x03)
-#define C_DISC ((unsigned char)0x0B)
-#define C_UA ((unsigned char)0x07)
-#define C_RR_0 0x05
-#define C_RR_1 0x85
-#define C_RJ_0 0x01
-#define C_RJ_1 0x81
-#define C_DATA_0 0x00
-#define C_DATA_1 0x40
-
-#define ESC_BYTE 0x7D
-#define BYTE_STUFFING_ESCAPE 0x5D
-#define BYTE_STUFFING_FLAG 0x5E
+#include <stdbool.h>
 
 typedef struct
 {
@@ -53,7 +36,6 @@ typedef struct
     unsigned char *data;
     unsigned int data_size;
 } Trama;
-
 
 int fd;
 Trama trama;
@@ -230,10 +212,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
     }
 }
 
-
-
-
-
 ////////////////////////////////////////////////
 // LLOPEN
 ////////////////////////////////////////////////
@@ -309,37 +287,36 @@ int llwrite(int fd, const unsigned char *buf, int bufSize)
     // TODO
 
     unsigned char controlByte;
-  if (ll.sequenceNumber == 0)
-    controlByte = C_DATA_0;
-  else
-    controlByte = C_DATA_1;
-
+    /*if (linker.sequenceNumber == 0)
+        controlByte = C_DATA_0;
+    else
+        controlByte = C_DATA_1;
+*/
     if (createInformationFrame(linker.frame, controlByte, buf, bufSize) != 0)
     {
+        }
 
-    }
-
-    //STUFF IT
-    if ((int fullLength = byteStuffing(linker.frame, bufSize)) < 0)
+    int fullLength;
+    // STUFF IT
+    if ((fullLength = byteStuffing(linker.frame, bufSize)) < 0)
     {
-
     }
 
     linker.framelen = fullLength;
 
-     bool dataSent = false;
+    bool dataSent = false;
 
     while (!dataSent)
     {
-    if ((int written = sendFrame(linker.frame, fd, linker.framelen)) == -1)
-    {
-      
+        int written;
+        if ((written = sendFrame(fd, linker.frame, linker.framelen)) == -1)
+        {
+        }
+
+        // TO BE FINISHED
+
+        return 0;
     }
-
-    //TO BE FINISHED
-
-
-    return 0;
 }
 
 ////////////////////////////////////////////////
