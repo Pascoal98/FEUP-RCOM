@@ -3,6 +3,7 @@
 
 #include "macros.h"
 #include "link_layer.h"
+#include <stddef.h>
 
 typedef struct
 {
@@ -28,12 +29,14 @@ typedef struct
     unsigned int data_size;
 } Trama;
 
+int createInfoFrame(unsigned char *buffer, unsigned char *data, unsigned int data_size, unsigned char address, unsigned char control);
+
+int createSUFrame(unsigned char *buffer, unsigned char address, unsigned control);
+
 unsigned char createBCC_header(unsigned char address, unsigned char control);
 
 unsigned char createBCC2(unsigned char *frame, int length);
 
-int byteStuffing(unsigned char *frame, int length);
-
-int byteDestuffing(unsigned char *frame, int length);
+int byteStuffing(unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc);
 
 #endif

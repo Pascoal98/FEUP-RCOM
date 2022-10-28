@@ -5,7 +5,36 @@
 // HELPER FUNCTIONS
 ///////////////////////////////////////////
 
-int createDataFrama() {}
+int createInfoFrame(unsigned char *buffer, unsigned char *data, unsigned int data_size, unsigned char address, unsigned char control)
+{
+    buffer[0] = FLAG;
+    buffer[1] = address;
+    buffer[2] = control;
+    buffer[3] = createBCC_header(address, control);
+
+    int added_length = 0;
+    unsigned char bcc = 0;
+
+    for (int i = 0; i < data_size; i++)
+        added_length += byteStuffing(data + i, 1, buffer + added_length + 4, &bcc);
+
+    added_length += byteStuffing(&bcc, 1, buffer + added_length + 4, NULL);
+    buffer[added_length + 4] = FLAG;
+
+    return added_length + 5;
+}
+
+int createSUFrame(unsigned char *buffer, unsigned char address, unsigned control)
+{
+
+    buffer[0] = FLAG;
+    buffer[1] = address;
+    buffer[2] = control;
+    buffer[3] = createBCC_header(address, control);
+    buffer[4] = FLAG;
+
+    return 5;
+}
 
 unsigned char createBCC_header(unsigned char address, unsigned char control)
 {
@@ -26,81 +55,29 @@ unsigned char createBCC2(unsigned char *frame, int length)
     return bcc;
 }
 
-int byteStuffing(unsigned char *frame, int length)
+int byteStuffing(unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc)
 {
-
-    unsigned char aux[length + 6];
-
-    for (int i = 0; i < length + 6; i++)
+    int size = 0;
+    for (int i = 0; i < sizeBuffer; i++)
     {
-        aux[i] = frame[i];
+        if (bcc != NULL)
+            *bcc ^= frame[i];
+
+        if (frame[i] == FLAG)
+        {
+            data[size++] = ESC_BYTE;
+            data[size++] = BYTE_STUFFING_FLAG;
+            break;
+        }
+        if (frame[i] == ESC_BYTE)
+        {
+            data[size++] = ESC_BYTE;
+            data[size++] = BYTE_STUFFING_ESCAPE;
+            break;
+        }
+        data[size++] = frame[i];
     }
-
-    int header_jump = 4; // onde a informaçao a enviar começa
-
-    for (int i = 4; i < (length + 6); i++)
-    {
-
-        if (aux[i] == FLAG && i != (length + 5))
-        {
-            frame[header_jump] = ESC_BYTE;
-            frame[header_jump + 1] = BYTE_STUFFING_FLAG;
-            header_jump = header_jump + 2;
-        }
-        else if (aux[i] == ESC_BYTE && i != (length + 5))
-        {
-            frame[header_jump] = ESC_BYTE;
-            frame[header_jump + 1] = BYTE_STUFFING_ESCAPE;
-            header_jump = header_jump + 2;
-        }
-        else
-        {
-            frame[header_jump] = aux[i];
-            header_jump++;
-        }
-    }
-
-    return header_jump;
-}
-
-int byteDestuffing(unsigned char *frame, int length)
-{
-
-    unsigned char aux[length + 5];
-
-    // copiar da trama para o auxiliar
-    for (int i = 0; i < (length + 5); i++)
-    {
-        aux[i] = frame[i];
-    }
-
-    int header_jump = 4;
-
-    // iterates through the aux buffer, and fills the frame buffer with destuffed content
-    for (int i = 4; i < (length + 5); i++)
-    {
-
-        if (aux[i] == ESC_BYTE)
-        {
-            if (aux[i + 1] == BYTE_STUFFING_ESCAPE)
-            {
-                frame[header_jump] = ESC_BYTE;
-            }
-            else if (aux[i + 1] == BYTE_STUFFING_FLAG)
-            {
-                frame[header_jump] = FLAG;
-            }
-            i++;
-            header_jump++;
-        }
-        else
-        {
-            frame[header_jump] = aux[i];
-            header_jump++;
-        }
-    }
-
-    return header_jump;
+    return size;
 }
 
 ///////////////////////////////////////////
@@ -223,18 +200,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
     case S_ESC:
         if (byte == BYTE_STUFFING_ESCAPE)
         {
-            if (trama->bcc == FLAG)
-            {
-                trama->state = S_BCC2;
-                break;
-            }
-            trama->bcc = createBCC_header(trama->bcc, FLAG);
-            trama->data[trama->data_size++] = FLAG;
-            trama->state = S_DATA;
-            break;
-        }
-        if (byte == BYTE_STUFFING_FLAG)
-        {
             if (trama->bcc == ESC_BYTE)
             {
                 trama->state = S_BCC2;
@@ -242,6 +207,18 @@ void state_machine_handler(Trama *trama, unsigned char byte)
             }
             trama->bcc = createBCC_header(trama->bcc, ESC_BYTE);
             trama->data[trama->data_size++] = ESC_BYTE;
+            trama->state = S_DATA;
+            break;
+        }
+        if (byte == BYTE_STUFFING_FLAG)
+        {
+            if (trama->bcc == FLAG)
+            {
+                trama->state = S_BCC2;
+                break;
+            }
+            trama->bcc = createBCC_header(trama->bcc, FLAG);
+            trama->data[trama->data_size++] = FLAG;
             trama->state = S_DATA;
             break;
         }
