@@ -5,33 +5,7 @@
 // HELPER FUNCTIONS
 ///////////////////////////////////////////
 
-// ^ = XOR
-
-// bbc1
-/*
-@param address address byte
-@param control control byte
-
-
-*/
-
-int sendFrame(int fd, unsigned char *frame, int length)
-{
-    int n;
-    if (n = write(fd, &frame, length) <= 0)
-        return -1; // ERROR
-
-    return n;
-}
-
-// read a byte from a fd
-int readByte(int fd, unsigned char *byte)
-{
-    if (read(fd, byte, sizeof(unsigned char)) <= 0)
-        return -1; // ERROR
-
-    return 0;
-}
+int createDataFrama() {}
 
 unsigned char createBCC_header(unsigned char address, unsigned char control)
 {
@@ -39,103 +13,17 @@ unsigned char createBCC_header(unsigned char address, unsigned char control)
 }
 
 // bcc2
-unsigned char createBCC_data(unsigned char *frame, int length)
+unsigned char createBCC2(unsigned char *frame, int length)
 {
 
     unsigned char bcc = frame[0];
 
     for (int i = 1; i < length; i++)
     {
-        bcc = bcc ^ frame[i];
+        bcc ^= frame[i];
     }
 
     return bcc;
-}
-
-int createSupervisionFrame(Trama *trama, unsigned char control, LinkLayerRole role)
-{
-
-    trama.data[0] = FLAG;
-    trama.flag = FLAG;
-
-    if (role == LlTx)
-    {
-        if (control == C_SET || control == C_DISC)
-        {
-            trama.data[1] = A_SEND;
-            trama.adr = A_SEND;
-        }
-        else if (control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1)
-        {
-            trama.data[1] = A_RESPONSE;
-            trama.adr = A_RESPONSE;
-
-        }
-        else
-            return 1;
-    }
-    else if (role == LlRx)
-    {
-        if (control == C_SET || control == C_DISC)
-        {
-            trama.data[1] = A_RESPONSE;
-            trama.adr = A_RESPONSE;
-        }
-        else if (control == C_UA || control == C_RR_0 || control == C_RJ_0 || control == C_RR_1 || control == C_RJ_1)
-        {
-            trama.data[1] = A_SEND;
-            trama.adr = A_SEND;
-        }
-        else
-            return 1;
-    }
-    else
-        return 1;
-
-    trama.data[2] = control;
-    trama.ctrl = control;
-
-    unsigned char bcc = createBCC_header(frame[1], frame[2]);
-    trama.data[3] = bcc;
-    trama.bcc = bcc;
-
-    trama.data[4] = FLAG;
-
-    return 0;
-}
-
-int createInformationFrame(Trama *trama, unsigned char *frame, unsigned char control, unsigned char *info, int infolength)
-{
-
-    trama.data[0] = FLAG;
-    trama.flag = FLAG;
-
-    trama.data[1] = A_SEND;
-    trama.adr = A_SEND;
-
-    trama.data[2] = control;
-    trama.ctrl = control;
-
-    unsigned char bcc1 = createBCC_header(trama.data[1], trama.data[2]);
-    trama.data[3] = bcc1;
-    trama.bcc = bcc1;
-
-    for (int i = 0; i < infolength; i++)
-    {
-        trama.data[i + 4] = info[i];
-    }
-
-
-    unsigned char bcc2 = createBCC_data(info, infolength);
-
-    trama.data[infolength + 4] = bcc2;
-    trama.bcc2 = bbc2;
-
-    trama.data[infolength + 5] = FLAG;
-
-    trama.data_size = infolength + 6;
-
-    return 0;
 }
 
 int byteStuffing(unsigned char *frame, int length)
@@ -215,62 +103,159 @@ int byteDestuffing(unsigned char *frame, int length)
     return header_jump;
 }
 
-/*
+///////////////////////////////////////////
+// STATE MACHINE
+///////////////////////////////////////////
 
-int readSupervisionFrame(unsigned char* frame, )
+void state_machine_handler(Trama *trama, unsigned char byte)
 {
-
-    Trama super;
-
-    super.flag = frame[0]
-
-    super.adr = frame[1];
-
-    super.ctrl = frame[2];
-
-    super.bcc = frame[3];
-
-
-
-
-
-}
-
-
-
-
-int readInformationFrame(unsigned char* frame,)
-{
-
-    Trama info;
-
-    info.flag = frame[0];
-
-    info.adr = frame[1];
-
-    info.ctrl = frame[2];
-
-    unsigned char bbc1 = frame[3];
-
-    int ln = sizeof(frame) / sizeof(frame[0]);
-
-    for (int i = 4; i < (ln); i++)
+    switch (trama->state)
     {
-        if (frame[i] == info.flag)
+    case S_START:
+        if (byte == FLAG)
+            trama->state = S_FLAG;
+        break;
+
+    case S_FLAG:
+        if (byte == A_SEND || byte == A_RESPONSE)
         {
-            info.bcc2 = frame[i - 1];
-            info.data_size = (i - 2) - 3;
-
-            memcpy(info.data, &frame[4], info.data_size*sizeof(*frame)); //not entirely sure
-
+            trama->state = S_ADR;
+            trama->adr = byte;
+            break;
         }
+        if (byte == FLAG)
+            break;
+        trama->state = S_START;
+        break;
+
+    case S_ADR:
+        if (byte == C_SET || byte == C_DISC || byte == C_UA || byte == C_RR_0 || byte == C_RR_1 || byte == C_RJ_0 || byte == C_RJ_1)
+        {
+            trama->state = S_CTRL;
+            trama->ctrl = byte;
+            trama->bcc = createBCC_header(trama->adr, trama->ctrl);
+            break;
+        }
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
+        trama->state = S_START;
+        break;
+
+    case S_CTRL:
+        if (byte == trama->bcc)
+        {
+            trama->state = S_BCC1;
+            break;
+        }
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
+        trama->state = S_START;
+        break;
+
+    case S_BCC1:
+        if (byte == FLAG)
+        {
+            if (trama->ctrl == C_DATA_0 || trama->ctrl == C_DATA_1)
+            {
+                trama->state = S_FLAG;
+                break;
+            }
+            trama->state = S_END;
+            break;
+        }
+        if ((trama->ctrl == C_DATA_0 || trama->ctrl == C_DATA_1) && trama->data != NULL)
+        {
+            trama->data_size = 0;
+            if (byte == ESC_BYTE)
+            {
+                trama->state = S_ESC;
+                break;
+            }
+            trama->data[trama->data_size++] = byte;
+            trama->bcc = byte;
+            trama->state = S_DATA;
+            break;
+        }
+        trama->state = S_START;
+        break;
+
+    case S_BCC2:
+        if (byte == 0)
+        {
+            trama->data[trama->data_size++] = trama->bcc;
+            trama->bcc = 0;
+        }
+        if (byte == FLAG)
+        {
+            trama->state = S_FLAG;
+            break;
+        }
+        trama->data[trama->data_size++] = trama->bcc;
+        trama->data[trama->data_size++] = byte;
+        trama->bcc = byte;
+        trama->state = S_DATA;
+        break;
+    case S_DATA:
+        if (byte == trama->bcc)
+        {
+            trama->state = S_BCC2;
+            break;
+        }
+        if (byte == ESC_BYTE)
+        {
+            trama->state = S_ESC;
+            break;
+        }
+        if (byte == FLAG)
+        {
+            trama->state = S_REJ;
+            break;
+        }
+        trama->data[trama->data_size++] = byte;
+        trama->bcc = createBCC_header(trama->bcc, byte);
+        break;
+    case S_ESC:
+        if (byte == BYTE_STUFFING_ESCAPE)
+        {
+            if (trama->bcc == FLAG)
+            {
+                trama->state = S_BCC2;
+                break;
+            }
+            trama->bcc = createBCC_header(trama->bcc, FLAG);
+            trama->data[trama->data_size++] = FLAG;
+            trama->state = S_DATA;
+            break;
+        }
+        if (byte == BYTE_STUFFING_FLAG)
+        {
+            if (trama->bcc == ESC_BYTE)
+            {
+                trama->state = S_BCC2;
+                break;
+            }
+            trama->bcc = createBCC_header(trama->bcc, ESC_BYTE);
+            trama->data[trama->data_size++] = ESC_BYTE;
+            trama->state = S_DATA;
+            break;
+        }
+        if (byte == FLAG)
+        {
+            trama->state = S_REJ;
+            break;
+        }
+        trama->state = S_START;
+        break;
+    case S_END:
+        trama->state = S_START;
+        break;
+    case S_REJ:
+        break;
     }
-
-
-
-    // ^ go from bbc1 to bbc2
-
-
 }
-
-*/

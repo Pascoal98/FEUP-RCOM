@@ -23,22 +23,14 @@ typedef struct
     unsigned char adr;
     unsigned char ctrl;
     unsigned char bcc;
-    unsigned char bbc2;
+    unsigned char bcc2;
     unsigned char *data;
     unsigned int data_size;
 } Trama;
 
-int sendFrame(int fd, unsigned char *frame, int length);
-
-int readByte(int fd, unsigned char *byte);
-
 unsigned char createBCC_header(unsigned char address, unsigned char control);
 
-unsigned char createBCC_data(unsigned char *frame, int length);
-
-int createSupervisionFrame(unsigned char *frame, unsigned char control, LinkLayerRole role);
-
-int createInformationFrame(unsigned char *frame, unsigned char control, unsigned char *info, int infolength);
+unsigned char createBCC2(unsigned char *frame, int length);
 
 int byteStuffing(unsigned char *frame, int length);
 
