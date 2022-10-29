@@ -18,6 +18,7 @@ Trama trama;
 struct termios oldtio;
 struct termios newtio;
 LinkLayer linker;
+unsigned char buffer[128];
 
 // Alarm Setup
 int alarmEnabled = FALSE;
@@ -64,8 +65,8 @@ int llopen(LinkLayer connectionParameters)
 
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
-    newtio.c_cc[VTIME] = 30; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 0;   // Blocking read until 5 chars received
+    newtio.c_cc[VTIME] = 0; // Inter-character timer unused
+    newtio.c_cc[VMIN] = 0;  // Blocking read until 5 chars received
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -90,14 +91,74 @@ int llopen(LinkLayer connectionParameters)
     {
         int flag = 0;
         trama.state = S_START;
-
+        alarmCount = 0;
         while (alarmCount < linker.nRetransmissions && !flag)
         {
             alarm(linker.timeout);
             alarmEnabled = TRUE;
+            if (alarmCount > 0)
+            {
+                alarmCount++;
+                printf("Alarm Count = %d\n", alarmCount);
+            }
+            int size = createSUFrame(buffer, A_SEND, C_SET);
+            write(fd, buffer, size);
+
+            while (alarmEnabled && !flag)
+            {
+                int bytes = read(fd, buffer, 128);
+
+                if (bytes < 0)
+                    return -1;
+
+                for (int i = 0; i < bytes && !flag; i++)
+                {
+                    state_machine_handler(&trama, buffer[i]);
+
+                    if (trama.state == S_END &&trama.adr == A_SEND &&trama.ctrl = C_UA)
+                        flag = 1;
+                }
+            }
         }
+
+        if (flag)
+            printf("UA sent successfully!\n");
+        else
+            return -1;
+        return 1;
     }
-    return 1;
+    else // receiver
+    {
+        int flag = 0;
+        trama.state = S_START;
+        while (!flag)
+        {
+            int bytes = read(fd, buffer, 128);
+
+            if (bytes < 0)
+                return -1;
+
+            for (int i = 0; i < bytes && !flag; i++)
+            {
+                state_machine_handler(&trama, buffer[i]);
+                if (trama.state == S_END &&trama.adr == A_SEND &&trama.ctrl = C_DISC)
+                {
+                    printf("Disconnected!\n");
+                    return -1;
+                }
+                if (trama.state == S_END &&trama.adr == A_SEND &&trama.ctrl = C_SET)
+                    flag = 1;
+            }
+        }
+
+        if (flag)
+            printf("SET sent successfully!\n");
+
+        int trama_size = createSUFrame(buffer, A_SEND, C_UA);
+        write(fd, buffer, trama_size);
+        return 1;
+    }
+    return -1;
 }
 
 ////////////////////////////////////////////////

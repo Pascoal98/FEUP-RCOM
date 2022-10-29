@@ -63,16 +63,16 @@ int byteStuffing(unsigned char *frame, int sizeBuffer, unsigned char *data, unsi
         if (bcc != NULL)
             *bcc ^= frame[i];
 
-        if (frame[i] == FLAG)
-        {
-            data[size++] = ESC_BYTE;
-            data[size++] = BYTE_STUFFING_FLAG;
-            break;
-        }
         if (frame[i] == ESC_BYTE)
         {
             data[size++] = ESC_BYTE;
             data[size++] = BYTE_STUFFING_ESCAPE;
+            break;
+        }
+        if (frame[i] == FLAG)
+        {
+            data[size++] = ESC_BYTE;
+            data[size++] = BYTE_STUFFING_FLAG;
             break;
         }
         data[size++] = frame[i];

@@ -39,4 +39,5 @@ unsigned char createBCC2(unsigned char *frame, int length);
 
 int byteStuffing(unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc);
 
+void state_machine_handler(Trama *trama, unsigned char byte);
 #endif
