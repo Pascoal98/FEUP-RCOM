@@ -3,6 +3,7 @@
 #include "helper.h"
 
 // includes
+#include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -115,7 +116,7 @@ int llopen(LinkLayer connectionParameters)
                 {
                     state_machine_handler(&trama, buffer[i]);
 
-                    if (trama.state == S_END &&trama.adr == A_SEND &&trama.ctrl = C_UA)
+                    if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_UA)
                         flag = 1;
                 }
             }
@@ -141,12 +142,12 @@ int llopen(LinkLayer connectionParameters)
             for (int i = 0; i < bytes && !flag; i++)
             {
                 state_machine_handler(&trama, buffer[i]);
-                if (trama.state == S_END &&trama.adr == A_SEND &&trama.ctrl = C_DISC)
+                if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_DISC)
                 {
                     printf("Disconnected!\n");
                     return -1;
                 }
-                if (trama.state == S_END &&trama.adr == A_SEND &&trama.ctrl = C_SET)
+                if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_SET)
                     flag = 1;
             }
         }
