@@ -20,6 +20,11 @@ struct termios oldtio;
 struct termios newtio;
 LinkLayer linker;
 unsigned char buffer[128];
+unsigned char *bigBuffer;
+int bigBufferSize = 0;
+int data_flag = 0;
+int timeoutStats = 0;
+int retransmitionsStats = 0;
 
 // Alarm Setup
 int alarmEnabled = FALSE;
@@ -167,6 +172,165 @@ int llopen(LinkLayer connectionParameters)
 ////////////////////////////////////////////////
 int llwrite(const unsigned char *buf, int bufSize)
 {
+    if (data_flag == 0)
+    {
+        if (bigBufferSize < bufSize * 2 + 10)
+        {
+            if (bigBufferSize == 0)
+                bigBuffer = malloc(bufSize * 2 + 10);
+            else
+                bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
+        }
+
+        int trama_size = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_0);
+
+        for (unsigned int i = 0; i < trama_size;)
+        {
+            int bytes = write(fd, bigBuffer + i, trama_size - i);
+            if (bytes == -1)
+                return -1;
+            i += bytes;
+        }
+        int gotPacket = 0;
+        int sendAgain = 0;
+        int retransmitions = 0;
+
+        trama.data = NULL;
+        alarmEnabled = TRUE;
+        alarm(linker.timeout);
+        if (!gotPacket)
+        {
+            if (!alarmEnabled)
+            {
+                sendAgain = 1;
+                alarmEnabled = TRUE;
+                alarm(linker.timeout);
+            }
+            if (sendAgain)
+            {
+                if (retransmitions > 0)
+                    timeoutStats++;
+                if (retransmitions == linker.nRetransmissions)
+                    return -1;
+
+                for (unsigned int i = 0; i < trama_size;) // sendAgain package
+                {
+                    int bytes_written = write(fd, bigBuffer + i, trama_size - i);
+                    if (bytes_written == -1)
+                        return -1;
+                    i += bytes_written;
+                }
+                sendAgain = 0;
+                retransmitions++;
+            }
+
+            int bytes_read = read(fd, buffer, 128);
+
+            if (bytes_read < 0)
+                return -1;
+
+            for (int i = 0; i < bytes_read && !gotPacket && !alarmEnabled; i++)
+            {
+
+                state_machine_handler(&trama, buffer[i]);
+
+                if (trama.state == S_END)
+                {
+                    if (trama.adr == A_SEND && (trama.ctrl == C_RR_0 || trama.ctrl == C_RR_1))
+                    {
+                        gotPacket = 1;
+                        sendAgain = 0;
+                    }
+                    if (trama.adr == A_SEND && trama.ctrl == C_RJ_0)
+                    {
+                        retransmitions = 0;
+                        retransmitionsStats++;
+                    }
+                }
+            }
+        }
+        data_flag = 1;
+    }
+    else
+    {
+        if (bigBufferSize < bufSize * 2 + 10)
+        {
+            if (bigBufferSize == 0)
+                bigBuffer = malloc(bufSize * 2 + 10);
+            else
+                bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
+        }
+
+        int trama_size = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_1);
+
+        for (unsigned int i = 0; i < trama_size;)
+        {
+            int bytes = write(fd, bigBuffer + i, trama_size - i);
+            if (bytes == -1)
+                return -1;
+            i += bytes;
+        }
+        int gotPacket = 0;
+        int sendAgain = 0;
+        int retransmitions = 0;
+
+        trama.data = NULL;
+        alarmEnabled = TRUE;
+        alarm(linker.timeout);
+        if (!gotPacket)
+        {
+            if (!alarmEnabled)
+            {
+                sendAgain = 1;
+                alarmEnabled = TRUE;
+                alarm(linker.timeout);
+            }
+            if (sendAgain)
+            {
+                if (retransmitions > 0)
+                    timeoutStats++;
+                if (retransmitions == linker.nRetransmissions)
+                    return -1;
+
+                for (unsigned int i = 0; i < trama_size;) // sendAgain package
+                {
+                    int bytes_written = write(fd, bigBuffer + i, trama_size - i);
+                    if (bytes_written == -1)
+                        return -1;
+                    i += bytes_written;
+                }
+                sendAgain = 0;
+                retransmitions++;
+            }
+
+            int bytes_read = read(fd, buffer, 128);
+
+            if (bytes_read < 0)
+                return -1;
+
+            for (int i = 0; i < bytes_read && !gotPacket && !alarmEnabled; i++)
+            {
+
+                state_machine_handler(&trama, buffer[i]);
+
+                if (trama.state == S_END)
+                {
+                    if (trama.adr == A_SEND && (trama.ctrl == C_RR_0 || trama.ctrl == C_RR_1))
+                    {
+                        gotPacket = 1;
+                        sendAgain = 0;
+                    }
+                    if (trama.adr == A_SEND && trama.ctrl == C_RJ_1)
+                    {
+                        retransmitions = 0;
+                        retransmitionsStats++;
+                    }
+                }
+            }
+        }
+        data_flag = 0;
+    }
+    return 0;
 }
 
 ////////////////////////////////////////////////

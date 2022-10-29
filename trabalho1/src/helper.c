@@ -5,7 +5,7 @@
 // HELPER FUNCTIONS
 ///////////////////////////////////////////
 
-int createInfoFrame(unsigned char *buffer, unsigned char *data, unsigned int data_size, unsigned char address, unsigned char control)
+int createInfoFrame(unsigned char *buffer, const unsigned char *data, unsigned int data_size, unsigned char address, unsigned char control)
 {
     buffer[0] = FLAG;
     buffer[1] = address;
@@ -55,7 +55,7 @@ unsigned char createBCC2(unsigned char *frame, int length)
     return bcc;
 }
 
-int byteStuffing(unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc)
+int byteStuffing(const unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc)
 {
     int size = 0;
     for (int i = 0; i < sizeBuffer; i++)
