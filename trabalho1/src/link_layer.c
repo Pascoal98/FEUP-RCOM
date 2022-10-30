@@ -22,7 +22,7 @@ LinkLayer linker;
 unsigned char buffer[128];
 unsigned char *bigBuffer;
 int bigBufferSize = 0;
-int data_flag = 0;
+int dataFlag = 0;
 int timeoutStats = 0;
 int retransmitionsStats = 0;
 
@@ -160,8 +160,8 @@ int llopen(LinkLayer connectionParameters)
         if (flag)
             printf("SET sent successfully!\n");
 
-        int trama_size = createSUFrame(buffer, A_SEND, C_UA);
-        write(fd, buffer, trama_size);
+        int tramaSize = createSUFrame(buffer, A_SEND, C_UA);
+        write(fd, buffer, tramaSize);
         return 1;
     }
     return -1;
@@ -172,7 +172,7 @@ int llopen(LinkLayer connectionParameters)
 ////////////////////////////////////////////////
 int llwrite(const unsigned char *buf, int bufSize)
 {
-    if (data_flag == 0)
+    if (dataFlag == 0)
     {
         if (bigBufferSize < bufSize * 2 + 10)
         {
@@ -182,11 +182,11 @@ int llwrite(const unsigned char *buf, int bufSize)
                 bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
         }
 
-        int trama_size = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_0);
+        int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_0);
 
-        for (unsigned int i = 0; i < trama_size;)
+        for (unsigned int i = 0; i < tramaSize;)
         {
-            int bytes = write(fd, bigBuffer + i, trama_size - i);
+            int bytes = write(fd, bigBuffer + i, tramaSize - i);
             if (bytes == -1)
                 return -1;
             i += bytes;
@@ -213,23 +213,23 @@ int llwrite(const unsigned char *buf, int bufSize)
                 if (retransmitions == linker.nRetransmissions)
                     return -1;
 
-                for (unsigned int i = 0; i < trama_size;) // sendAgain package
+                for (unsigned int i = 0; i < tramaSize;) // sendAgain package
                 {
-                    int bytes_written = write(fd, bigBuffer + i, trama_size - i);
-                    if (bytes_written == -1)
+                    int bytesWritten = write(fd, bigBuffer + i, tramaSize - i);
+                    if (bytesWritten == -1)
                         return -1;
-                    i += bytes_written;
+                    i += bytesWritten;
                 }
                 sendAgain = 0;
                 retransmitions++;
             }
 
-            int bytes_read = read(fd, buffer, 128);
+            int bytesRead = read(fd, buffer, 128);
 
-            if (bytes_read < 0)
+            if (bytesRead < 0)
                 return -1;
 
-            for (int i = 0; i < bytes_read && !gotPacket && !alarmEnabled; i++)
+            for (int i = 0; i < bytesRead && !gotPacket && !alarmEnabled; i++)
             {
 
                 state_machine_handler(&trama, buffer[i]);
@@ -249,7 +249,7 @@ int llwrite(const unsigned char *buf, int bufSize)
                 }
             }
         }
-        data_flag = 1;
+        dataFlag = 1;
     }
     else
     {
@@ -261,11 +261,11 @@ int llwrite(const unsigned char *buf, int bufSize)
                 bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
         }
 
-        int trama_size = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_1);
+        int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_1);
 
-        for (unsigned int i = 0; i < trama_size;)
+        for (unsigned int i = 0; i < tramaSize;)
         {
-            int bytes = write(fd, bigBuffer + i, trama_size - i);
+            int bytes = write(fd, bigBuffer + i, tramaSize - i);
             if (bytes == -1)
                 return -1;
             i += bytes;
@@ -292,23 +292,23 @@ int llwrite(const unsigned char *buf, int bufSize)
                 if (retransmitions == linker.nRetransmissions)
                     return -1;
 
-                for (unsigned int i = 0; i < trama_size;) // sendAgain package
+                for (unsigned int i = 0; i < tramaSize;) // sendAgain package
                 {
-                    int bytes_written = write(fd, bigBuffer + i, trama_size - i);
-                    if (bytes_written == -1)
+                    int bytesWritten = write(fd, bigBuffer + i, tramaSize - i);
+                    if (bytesWritten == -1)
                         return -1;
-                    i += bytes_written;
+                    i += bytesWritten;
                 }
                 sendAgain = 0;
                 retransmitions++;
             }
 
-            int bytes_read = read(fd, buffer, 128);
+            int bytesRead = read(fd, buffer, 128);
 
-            if (bytes_read < 0)
+            if (bytesRead < 0)
                 return -1;
 
-            for (int i = 0; i < bytes_read && !gotPacket && !alarmEnabled; i++)
+            for (int i = 0; i < bytesRead && !gotPacket && !alarmEnabled; i++)
             {
 
                 state_machine_handler(&trama, buffer[i]);
@@ -328,7 +328,7 @@ int llwrite(const unsigned char *buf, int bufSize)
                 }
             }
         }
-        data_flag = 0;
+        dataFlag = 0;
     }
     return 0;
 }
