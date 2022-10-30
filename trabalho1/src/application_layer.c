@@ -36,12 +36,13 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
             fprintf(stderr, "Couldn't open the file: %s\n", filename);
             exit(1);
         }
-
+        printf("1\n");
         unsigned char buffer[MAX_PAYLOAD_SIZE];
         int bytesRead;
         do
         {
-            bytesRead = read(fd, buffer + 1, MAX_PAYLOAD_SIZE - 1);
+            printf("2\n");
+            bytesRead = read(fd, buffer + 1, MAX_PAYLOAD_SIZE);
             if (bytesRead < 0)
             {
                 fprintf(stderr, "Error reading from link layer\n");
@@ -49,14 +50,15 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
             }
             else if (bytesRead > 0)
             {
+                printf("3\n");
                 buffer[0] = 1;
+                printf("bytes written %d \n", bytesRead);
                 int bytesWrite = llwrite(buffer, bytesRead);
                 if (bytesWrite < 0)
                 {
                     fprintf(stderr, "Error sending data back\n");
                     break;
                 }
-                printf("%d bytes written\n", bytesWrite);
             }
             else if (bytesRead == 0)
             {
@@ -82,18 +84,20 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         printf("Link Layer open\n");
 
-        int fd = open(filename, O_RDWR | O_CREAT);
+        int fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         if (fd < 0)
         {
             fprintf(stderr, "Couldn't open the file: %s\n", filename);
             exit(1);
         }
 
+        printf("1\n");
         unsigned char buffer[MAX_PAYLOAD_SIZE];
         int bytesRead, checkBytes = 0;
         do
         {
             bytesRead = llread(buffer);
+            printf("2\n");
             if (bytesRead < 0)
             {
                 fprintf(stderr, "Error reading from link layer\n");
@@ -104,6 +108,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 if (buffer[0] == 1)
                 {
                     int bytesWrite = write(fd, buffer + 1, MAX_PAYLOAD_SIZE - 1);
+                    printf("3\n");
                     if (bytesWrite < 0)
                     {
                         fprintf(stderr, "Error writing to the file\n");

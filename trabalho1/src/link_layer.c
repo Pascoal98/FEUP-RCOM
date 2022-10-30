@@ -7,8 +7,6 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <termios.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -45,6 +43,7 @@ void alarmHandler(int signal)
 ////////////////////////////////////////////////
 int llopen(LinkLayer connectionParameters)
 {
+    printf("LLOPEN\n");
     // TODO
     linker = connectionParameters;
 
@@ -128,7 +127,7 @@ int llopen(LinkLayer connectionParameters)
         }
 
         if (flag)
-            printf("UA sent successfully!\n");
+            printf("UA received successfully!\n");
         else
             return -1;
         return 1;
@@ -158,10 +157,11 @@ int llopen(LinkLayer connectionParameters)
         }
 
         if (flag)
-            printf("SET sent successfully!\n");
+            printf("SET received successfully!\n");
 
         int tramaSize = createSUFrame(buffer, A_SEND, C_UA);
         write(fd, buffer, tramaSize);
+        printf("trama size: %d\n", tramaSize);
         return 1;
     }
     return -1;
@@ -172,152 +172,92 @@ int llopen(LinkLayer connectionParameters)
 ////////////////////////////////////////////////
 int llwrite(const unsigned char *buf, int bufSize)
 {
-    if (dataFlag == 0)
+    printf("LLWRITE\n");
+    if (bigBufferSize < bufSize * 2 + 10)
     {
-        bigBuffer = malloc(bigBufferSize * 2 + 10);
-
-        int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_0);
-
-        for (unsigned int i = 0; i < tramaSize;)
-        {
-            int bytes = write(fd, bigBuffer + i, tramaSize - i);
-            if (bytes == -1)
-                return -1;
-            i += bytes;
-        }
-        int gotPacket = 0;
-        int sendAgain = 0;
-        int retransmitions = 0;
-
-        trama.data = NULL;
-        alarmEnabled = TRUE;
-        alarm(linker.timeout);
-        if (!gotPacket)
-        {
-            if (!alarmEnabled)
-            {
-                sendAgain = 1;
-                alarmEnabled = TRUE;
-                alarm(linker.timeout);
-            }
-            if (sendAgain)
-            {
-                if (retransmitions > 0)
-                    timeoutStats++;
-                if (retransmitions == linker.nRetransmissions)
-                    return -1;
-
-                for (unsigned int i = 0; i < tramaSize;) // sendAgain package
-                {
-                    int bytesWritten = write(fd, bigBuffer + i, tramaSize - i);
-                    if (bytesWritten == -1)
-                        return -1;
-                    i += bytesWritten;
-                }
-                sendAgain = 0;
-                retransmitions++;
-            }
-
-            int bytesRead = read(fd, buffer, 128);
-
-            if (bytesRead < 0)
-                return -1;
-
-            for (int i = 0; i < bytesRead && !gotPacket && !alarmEnabled; i++)
-            {
-
-                state_machine_handler(&trama, buffer[i]);
-
-                if (trama.state == S_END)
-                {
-                    if (trama.adr == A_SEND && (trama.ctrl == C_RR_0 || trama.ctrl == C_RR_1))
-                    {
-                        gotPacket = 1;
-                        sendAgain = 0;
-                    }
-                    if (trama.adr == A_SEND && trama.ctrl == C_RJ_0)
-                    {
-                        retransmitions = 0;
-                        retransmitionsStats++;
-                    }
-                }
-            }
-        }
-        dataFlag = 1;
+        if (bigBufferSize == 0)
+            bigBuffer = malloc(bufSize * 2 + 10);
+        else
+            bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
     }
-    else
+
+    int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_(dataFlag));
+
+    printf("Trama size %d\n", tramaSize);
+    printf("\n-------------------------------------\n");
+    for (unsigned int i = 0; i < tramaSize;)
     {
-        bigBuffer = malloc(bigBufferSize * 2 + 10);
-
-        int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_1);
-
-        for (unsigned int i = 0; i < tramaSize;)
-        {
-            int bytes = write(fd, bigBuffer + i, tramaSize - i);
-            if (bytes == -1)
-                return -1;
-            i += bytes;
-        }
-        int gotPacket = 0;
-        int sendAgain = 0;
-        int retransmitions = 0;
-
-        trama.data = NULL;
-        alarmEnabled = TRUE;
-        alarm(linker.timeout);
-        if (!gotPacket)
-        {
-            if (!alarmEnabled)
-            {
-                sendAgain = 1;
-                alarmEnabled = TRUE;
-                alarm(linker.timeout);
-            }
-            if (sendAgain)
-            {
-                if (retransmitions > 0)
-                    timeoutStats++;
-                if (retransmitions == linker.nRetransmissions)
-                    return -1;
-
-                for (unsigned int i = 0; i < tramaSize;) // sendAgain package
-                {
-                    int bytesWritten = write(fd, bigBuffer + i, tramaSize - i);
-                    if (bytesWritten == -1)
-                        return -1;
-                    i += bytesWritten;
-                }
-                sendAgain = 0;
-                retransmitions++;
-            }
-
-            int bytesRead = read(fd, buffer, 128);
-
-            if (bytesRead < 0)
-                return -1;
-
-            for (int i = 0; i < bytesRead && !gotPacket && !alarmEnabled; i++)
-            {
-
-                state_machine_handler(&trama, buffer[i]);
-
-                if (trama.state == S_END)
-                {
-                    if (trama.adr == A_SEND && (trama.ctrl == C_RR_0 || trama.ctrl == C_RR_1))
-                    {
-                        gotPacket = 1;
-                        sendAgain = 0;
-                    }
-                    if (trama.adr == A_SEND && trama.ctrl == C_RJ_1)
-                    {
-                        retransmitions = 0;
-                        retransmitionsStats++;
-                    }
-                }
-            }
-        }
-        dataFlag = 0;
+        int bytes = write(fd, bigBuffer + i, tramaSize - i);
+        if (bytes == -1)
+            return -1;
+        i += bytes;
     }
+    printf("\n-------------------------------------\n");
+    int gotPacket = 0;
+    int sendAgain = 0;
+    int retransmitions = 0;
+
+    trama.data = NULL;
+    alarmEnabled = TRUE;
+    alarm(linker.timeout);
+    if (!gotPacket)
+    {
+        if (!alarmEnabled)
+        {
+            sendAgain = 1;
+            alarmEnabled = TRUE;
+            alarm(linker.timeout);
+        }
+        if (sendAgain)
+        {
+            if (retransmitions > 0)
+                timeoutStats++;
+            if (retransmitions == linker.nRetransmissions)
+                return -1;
+
+            for (unsigned int i = 0; i < tramaSize;) // sendAgain package
+            {
+                int bytesWritten = write(fd, bigBuffer + i, tramaSize - i);
+                if (bytesWritten == -1)
+                    return -1;
+                i += bytesWritten;
+            }
+            printf("Send again\n");
+            sendAgain = 0;
+            retransmitions++;
+        }
+        printf("%d %d sendAgain retransmission\n", sendAgain, retransmitions);
+
+        int bytesRead = read(fd, buffer, 128);
+
+        printf("bytes read %d\n", bytesRead);
+        if (bytesRead < 0)
+            return -1;
+
+        for (int i = 0; i < bytesRead && !gotPacket && !alarmEnabled; i++)
+        {
+
+            state_machine_handler(&trama, buffer[i]);
+
+            printf("%d\n", trama.state);
+            if (trama.state == S_END)
+            {
+                if (trama.adr == A_SEND && (trama.ctrl == C_RR_(0) || trama.ctrl == C_RR_(1)))
+                {
+                    gotPacket = 1;
+                    if (trama.ctrl == C_RR_(dataFlag))
+                        printf("Next packet please\n");
+                    sendAgain = 0;
+                }
+                if (trama.adr == A_SEND && trama.ctrl == C_RJ_(dataFlag))
+                {
+                    retransmitions = 0;
+                    retransmitionsStats++;
+                }
+            }
+        }
+    }
+    dataFlag = dataFlag ? 0 : 1;
     return 0;
 }
 
@@ -326,140 +266,72 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
+    printf("LLREAD\n");
     int frameSize;
-    if (dataFlag == 0)
+
+    if (bigBufferSize < 128)
     {
-        bigBuffer = malloc(128);
+        if (bigBufferSize == 0)
+            bigBuffer = malloc(128);
+        else
+            bigBuffer = realloc(bigBuffer, 128);
+    }
 
-        int gotPacket = 0;
-        trama.data = packet;
+    int gotPacket = 0;
+    trama.data = packet;
 
-        while (!gotPacket)
+    while (!gotPacket)
+    {
+        printf("Before read1 LLREAD\n");
+        int bytesRead = read(fd, bigBuffer, 128);
+        printf("After read1 LLREAD\n");
+        if (bytesRead < 0)
+            return -1;
+
+        for (int i = 0; i < bytesRead && !gotPacket; i++)
         {
-
-            int bytesRead = read(fd, bigBuffer, 128);
-
-            if (bytesRead < 0)
-                return -1;
-
-            for (int i = 0; i < bytesRead && !gotPacket; i++)
+            state_machine_handler(&trama, bigBuffer[i]);
+            if (trama.state == S_REJ && trama.adr == A_SEND)
             {
-                state_machine_handler(&trama, bigBuffer[i]);
-                if (trama.state == S_REJ && trama.adr == A_SEND)
-                {
-                    if (trama.ctrl == C_DATA_0)
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
-                    else
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
+                frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
 
-                    write(fd, buffer, frameSize);
-                    printf("RJ SENT\n");
-                }
-                if (trama.state == S_END && trama.adr == A_SEND)
+                write(fd, buffer, frameSize);
+                printf("RJ SENT\n");
+            }
+
+            if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_SET)
+            {
+                frameSize = createSUFrame(buffer, A_SEND, C_UA);
+                write(fd, buffer, frameSize);
+                printf("UA SENT\n");
+            }
+
+            if (trama.state == S_END && trama.adr == A_SEND)
+            {
+                if (trama.ctrl == C_DATA_(dataFlag))
                 {
-                    if (trama.ctrl == C_DATA_0 && dataFlag == 0)
-                    {
-                        dataFlag = 1;
-                        frameSize = createSUFrame(buffer, A_SEND, C_RR_1);
-                        write(fd, buffer, frameSize);
-                        printf("Sent RR1\n");
-                        return trama.data_size;
-                    }
-                    else if (trama.ctrl == C_DATA_0 && dataFlag == 1)
-                    {
-                        dataFlag = 0;
-                        frameSize = createSUFrame(buffer, A_SEND, C_RR_0);
-                        write(fd, buffer, frameSize);
-                        printf("Sent RR0\n");
-                        return trama.data_size;
-                    }
-                    else
-                    {
-                        frameSize = createSUFrame(buffer, A_SEND, C_RR_0);
-                        write(fd, buffer, frameSize);
-                        printf("Retransmission please\n");
-                    }
-                }
-                if (trama.ctrl == C_DISC)
-                {
-                    gotPacket = 1;
-                    if (trama.ctrl == C_DATA_0)
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
-                    else
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
+
+                    dataFlag = dataFlag ? 0 : 1;
+
+                    frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
                     write(fd, buffer, frameSize);
-                    printf("DISC\n");
-                    return -1;
-                    break;
+                    return trama.data_size;
+                }
+                else
+                {
+                    frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
+                    write(fd, buffer, frameSize);
                 }
             }
-        }
-    }
-    else
-    {
-        bigBuffer = malloc(128);
 
-        int gotPacket = 0;
-        trama.data = packet;
-
-        while (!gotPacket)
-        {
-
-            int bytesRead = read(fd, bigBuffer, 128);
-
-            if (bytesRead < 0)
-                return -1;
-
-            for (int i = 0; i < bytesRead && !gotPacket; i++)
+            if (trama.ctrl == C_DISC)
             {
-                state_machine_handler(&trama, bigBuffer[i]);
-                if (trama.state == S_REJ && trama.adr == A_SEND)
-                {
-                    if (trama.ctrl == C_DATA_1)
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
-                    else
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
-
-                    write(fd, buffer, frameSize);
-                    printf("RJ SENT\n");
-                }
-                if (trama.state == S_END && trama.adr == A_SEND)
-                {
-                    if (trama.ctrl == C_DATA_1 && dataFlag == 1)
-                    {
-                        dataFlag = 0;
-                        frameSize = createSUFrame(buffer, A_SEND, C_RR_0);
-                        write(fd, buffer, frameSize);
-                        printf("Sent RR0\n");
-                        return trama.data_size;
-                    }
-                    else if (trama.ctrl == C_DATA_1 && dataFlag == 0)
-                    {
-                        dataFlag = 1;
-                        frameSize = createSUFrame(buffer, A_SEND, C_RR_1);
-                        write(fd, buffer, frameSize);
-                        printf("Sent RR1\n");
-                        return trama.data_size;
-                    }
-                    else
-                    {
-                        frameSize = createSUFrame(buffer, A_SEND, C_RR_1);
-                        write(fd, buffer, frameSize);
-                        printf("Retransmission please\n");
-                    }
-                }
-                if (trama.ctrl == C_DISC)
-                {
-                    gotPacket = 1;
-                    if (trama.ctrl == C_DATA_1)
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
-                    else
-                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
-                    write(fd, buffer, frameSize);
-                    printf("DISC\n");
-                    return -1;
-                    break;
-                }
+                gotPacket = 1;
+                frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
+                write(fd, buffer, frameSize);
+                printf("DISCONNECTED\n");
+                return -1;
+                break;
             }
         }
     }
@@ -471,12 +343,21 @@ int llread(unsigned char *packet)
 ////////////////////////////////////////////////
 int llclose(int showStatistics)
 {
+    printf("LLCLOSE\n");
+    (void)signal(SIGALRM, alarmHandler);
+
+    if (bigBufferSize > 0)
+        free(bigBuffer);
+
     // Restore the old port settings
     if (tcsetattr(fd, TCSANOW, &oldtio) == -1)
     {
         perror("tcsetattr");
         exit(-1);
     }
+    printf("STATISTICS : \n");
+    printf("TIME OUT : %d\n", timeoutStats);
+    printf("RETRANSMITIONS : %d\n", retransmitionsStats);
 
     return 1;
 }

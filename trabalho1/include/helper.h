@@ -4,6 +4,7 @@
 #include "macros.h"
 #include "link_layer.h"
 #include <stddef.h>
+#include <stdio.h>
 
 typedef struct
 {
