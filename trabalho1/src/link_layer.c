@@ -174,13 +174,7 @@ int llwrite(const unsigned char *buf, int bufSize)
 {
     if (dataFlag == 0)
     {
-        if (bigBufferSize < bufSize * 2 + 10)
-        {
-            if (bigBufferSize == 0)
-                bigBuffer = malloc(bufSize * 2 + 10);
-            else
-                bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
-        }
+        bigBuffer = malloc(bigBufferSize * 2 + 10);
 
         int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_0);
 
@@ -253,13 +247,7 @@ int llwrite(const unsigned char *buf, int bufSize)
     }
     else
     {
-        if (bigBufferSize < bufSize * 2 + 10)
-        {
-            if (bigBufferSize == 0)
-                bigBuffer = malloc(bufSize * 2 + 10);
-            else
-                bigBuffer = realloc(bigBuffer, bufSize * 2 + 10);
-        }
+        bigBuffer = malloc(bigBufferSize * 2 + 10);
 
         int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_1);
 
@@ -338,6 +326,144 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
+    int frameSize;
+    if (dataFlag == 0)
+    {
+        bigBuffer = malloc(128);
+
+        int gotPacket = 0;
+        trama.data = packet;
+
+        while (!gotPacket)
+        {
+
+            int bytesRead = read(fd, bigBuffer, 128);
+
+            if (bytesRead < 0)
+                return -1;
+
+            for (int i = 0; i < bytesRead && !gotPacket; i++)
+            {
+                state_machine_handler(&trama, bigBuffer[i]);
+                if (trama.state == S_REJ && trama.adr == A_SEND)
+                {
+                    if (trama.ctrl == C_DATA_0)
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
+                    else
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
+
+                    write(fd, buffer, frameSize);
+                    printf("RJ SENT\n");
+                }
+                if (trama.state == S_END && trama.adr == A_SEND)
+                {
+                    if (trama.ctrl == C_DATA_0 && dataFlag == 0)
+                    {
+                        dataFlag = 1;
+                        frameSize = createSUFrame(buffer, A_SEND, C_RR_1);
+                        write(fd, buffer, frameSize);
+                        printf("Sent RR1\n");
+                        return trama.data_size;
+                    }
+                    else if (trama.ctrl == C_DATA_0 && dataFlag == 1)
+                    {
+                        dataFlag = 0;
+                        frameSize = createSUFrame(buffer, A_SEND, C_RR_0);
+                        write(fd, buffer, frameSize);
+                        printf("Sent RR0\n");
+                        return trama.data_size;
+                    }
+                    else
+                    {
+                        frameSize = createSUFrame(buffer, A_SEND, C_RR_0);
+                        write(fd, buffer, frameSize);
+                        printf("Retransmission please\n");
+                    }
+                }
+                if (trama.ctrl == C_DISC)
+                {
+                    gotPacket = 1;
+                    if (trama.ctrl == C_DATA_0)
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
+                    else
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
+                    write(fd, buffer, frameSize);
+                    printf("DISC\n");
+                    return -1;
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        bigBuffer = malloc(128);
+
+        int gotPacket = 0;
+        trama.data = packet;
+
+        while (!gotPacket)
+        {
+
+            int bytesRead = read(fd, bigBuffer, 128);
+
+            if (bytesRead < 0)
+                return -1;
+
+            for (int i = 0; i < bytesRead && !gotPacket; i++)
+            {
+                state_machine_handler(&trama, bigBuffer[i]);
+                if (trama.state == S_REJ && trama.adr == A_SEND)
+                {
+                    if (trama.ctrl == C_DATA_1)
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
+                    else
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
+
+                    write(fd, buffer, frameSize);
+                    printf("RJ SENT\n");
+                }
+                if (trama.state == S_END && trama.adr == A_SEND)
+                {
+                    if (trama.ctrl == C_DATA_1 && dataFlag == 1)
+                    {
+                        dataFlag = 0;
+                        frameSize = createSUFrame(buffer, A_SEND, C_RR_0);
+                        write(fd, buffer, frameSize);
+                        printf("Sent RR0\n");
+                        return trama.data_size;
+                    }
+                    else if (trama.ctrl == C_DATA_1 && dataFlag == 0)
+                    {
+                        dataFlag = 1;
+                        frameSize = createSUFrame(buffer, A_SEND, C_RR_1);
+                        write(fd, buffer, frameSize);
+                        printf("Sent RR1\n");
+                        return trama.data_size;
+                    }
+                    else
+                    {
+                        frameSize = createSUFrame(buffer, A_SEND, C_RR_1);
+                        write(fd, buffer, frameSize);
+                        printf("Retransmission please\n");
+                    }
+                }
+                if (trama.ctrl == C_DISC)
+                {
+                    gotPacket = 1;
+                    if (trama.ctrl == C_DATA_1)
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_1);
+                    else
+                        frameSize = createSUFrame(buffer, A_SEND, C_RJ_0);
+                    write(fd, buffer, frameSize);
+                    printf("DISC\n");
+                    return -1;
+                    break;
+                }
+            }
+        }
+    }
+    return 0;
 }
 
 ////////////////////////////////////////////////

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 void applicationLayer(const char *serialPort, const char *role, int baudRate, int nTries, int timeout, const char *filename)
 {
@@ -29,7 +30,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         printf("Link Layer open\n");
 
-        int fd = open(filename, "r");
+        int fd = open(filename, O_RDONLY);
         if (fd < 0)
         {
             fprintf(stderr, "Couldn't open the file: %s\n", filename);
@@ -81,7 +82,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         printf("Link Layer open\n");
 
-        int fd = open(filename, "r");
+        int fd = open(filename, O_RDWR | O_CREAT);
         if (fd < 0)
         {
             fprintf(stderr, "Couldn't open the file: %s\n", filename);
