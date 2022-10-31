@@ -19,6 +19,13 @@
 //#define C_DATA_0 (0x00)
 //#define C_DATA_1 (0x40)
 
+// App Layer
+#define CTRL_DATA (1)
+#define CTRL_START (2)
+#define CTRL_END (3)
+#define T_SIZE (0)
+#define BUF_SIZE (1024)
+
 #define ESC_BYTE (0x7D)
 #define BYTE_STUFFING_ESCAPE (0x5D)
 #define BYTE_STUFFING_FLAG (0x5E)

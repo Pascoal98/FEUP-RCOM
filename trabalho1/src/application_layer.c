@@ -2,11 +2,22 @@
 
 #include "application_layer.h"
 #include "link_layer.h"
+#include "macros.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+unsigned char buffer[BUF_SIZE];
+
+int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value)
+{
+    *type = buf[0];
+    *length = buf[1];
+    *value = buf + 2;
+    return *length + 2;
+}
 
 void applicationLayer(const char *serialPort, const char *role, int baudRate, int nTries, int timeout, const char *filename)
 {
@@ -28,49 +39,76 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
             exit(1);
         }
 
-        printf("Link Layer open\n");
+        printf("------------Link Layer open\n");
 
-        int fd = open(filename, O_RDONLY);
-        if (fd < 0)
+        FILE *fp = fopen(filename, "r");
+
+        if (fp == NULL)
         {
-            fprintf(stderr, "Couldn't open the file: %s\n", filename);
+            perror("Error opening the file.\n");
             exit(1);
         }
-        printf("1\n");
-        unsigned char buffer[MAX_PAYLOAD_SIZE];
-        int bytesRead;
-        do
+        else
         {
-            printf("2\n");
-            bytesRead = read(fd, buffer + 1, MAX_PAYLOAD_SIZE);
-            if (bytesRead < 0)
+            printf("File has been opened!\n");
+        }
+
+        fseek(fp, 0, SEEK_END);
+        int len = ftell(fp);
+        printf("Total size of the file = %d bytes\n", len);
+        fseek(fp, 0, SEEK_SET);
+
+        buffer[0] = CTRL_START;
+        buffer[1] = T_SIZE;
+        buffer[2] = sizeof(int);
+
+        printf("------------Link Layer Write\n");
+
+        *((int *)(buffer + 3)) = len;
+
+        int flag = 0;
+
+        if (llwrite(buffer, 10) == -1)
+        {
+            printf("Error llwrite\n");
+            flag = 1;
+        }
+
+        unsigned long bytesRead = 0;
+
+        for (unsigned char i = 0; bytesRead < len && !flag; i++)
+        {
+            unsigned long fileBytes = fread(buffer + 4, 1, (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE), fp);
+
+            buffer[0] = CTRL_DATA;
+            buffer[1] = i;
+            buffer[2] = fileBytes >> 8;
+            buffer[3] = fileBytes % 256;
+
+            if (llwrite(buffer, fileBytes + 4) == -1)
             {
-                fprintf(stderr, "Error reading from link layer\n");
-                exit(1);
-            }
-            else if (bytesRead > 0)
-            {
-                printf("3\n");
-                buffer[0] = 1;
-                printf("bytes written %d \n", bytesRead);
-                int bytesWrite = llwrite(buffer, bytesRead);
-                if (bytesWrite < 0)
-                {
-                    fprintf(stderr, "Error sending data back\n");
-                    break;
-                }
-            }
-            else if (bytesRead == 0)
-            {
-                buffer[0] = 0;
-                llwrite(buffer, 1);
-                printf("Bytes read == 0\n");
+                printf("Error llwrite\n");
+                flag = 1;
                 break;
             }
-        } while (bytesRead > 0);
 
-        llclose(1);
-        close(fd);
+            printf("File sent!\n");
+            bytesRead += fileBytes;
+        }
+
+        if (!flag)
+        {
+            buffer[0] = CTRL_END;
+            if (llwrite(buffer, 1) == -1)
+            {
+                printf("Error llwrite\n");
+            }
+            else
+            {
+                printf("Done!\n");
+            }
+        }
+        fclose(fp);
     }
     else
     {
@@ -84,47 +122,101 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         printf("Link Layer open\n");
 
-        int fd = open(filename, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-        if (fd < 0)
-        {
-            fprintf(stderr, "Couldn't open the file: %s\n", filename);
-            exit(1);
-        }
+        unsigned int len = 0, fileReceived = 0;
 
-        printf("1\n");
-        unsigned char buffer[MAX_PAYLOAD_SIZE];
-        int bytesRead, checkBytes = 0;
-        do
+        printf("------------Link Layer Read\n");
+
+        int bytesRead = llread(buffer);
+
+        unsigned char type, length, *value;
+
+        if (buffer[0] == CTRL_START)
         {
-            bytesRead = llread(buffer);
-            printf("2\n");
-            if (bytesRead < 0)
+            int offset = 1;
+            for (; offset < bytesRead;)
             {
-                fprintf(stderr, "Error reading from link layer\n");
+                offset += next_tlv(buffer, &type, &length, &value);
+
+                if (type == T_SIZE)
+                {
+                    len = *((unsigned int *)value);
+                    printf("File Size: %d", len);
+                }
+            }
+
+            FILE *fp = fopen(filename, "w");
+
+            if (fp == NULL)
+            {
+                perror("Error creating the file.\n");
                 exit(1);
             }
-            else if (bytesRead > 0)
+            else
             {
-                if (buffer[0] == 1)
+                printf("File has been created!\n");
+            }
+
+            unsigned char earlyStop = 0, lastNumber = 0;
+
+            for (; fileReceived < len;)
+            {
+                int numberBytes = llread(buffer);
+
+                if (numberBytes < 1)
                 {
-                    int bytesWrite = write(fd, buffer + 1, MAX_PAYLOAD_SIZE - 1);
-                    printf("3\n");
-                    if (bytesWrite < 0)
-                    {
-                        fprintf(stderr, "Error writing to the file\n");
-                        break;
-                    }
-                    checkBytes += bytesWrite;
-                }
-                else if (buffer[0] == 0)
-                {
-                    printf("Gif received\n");
+                    printf("Error with llread\n");
                     break;
                 }
-            }
-        } while (bytesRead > 0);
 
-        llclose(1);
-        close(fd);
+                if (buffer[0] == CTRL_END)
+                {
+                    printf("Disconnected!\n");
+                    earlyStop = 1;
+                    break;
+                }
+
+                if (buffer[1] == CTRL_DATA)
+                {
+                    if (buffer[1] != lastNumber)
+                    {
+                        printf("Received wrong sequence!\n");
+                    }
+                    else
+                    {
+                        unsigned int size = buffer[3] + buffer[2] * 256;
+
+                        fwrite(buffer + 4, 1, size, fp);
+                        fileReceived += size;
+                    }
+                }
+            }
+            if (!earlyStop)
+            {
+                int numberBytes = llread(buffer);
+
+                if (numberBytes < 1)
+                {
+                    printf("Error with llread\n");
+                }
+
+                if (buffer[0] == CTRL_END)
+                {
+                    printf("Disconnected, done sending!\n");
+                }
+                else
+                {
+                    printf("Error received wrong package!\n");
+                }
+            }
+            fclose(fp);
+        }
+        else
+        {
+            printf("Didn't start with start package\n");
+        }
     }
+
+    printf("------------Link Layer Close\n");
+
+    llclose(1);
 }

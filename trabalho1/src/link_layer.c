@@ -12,12 +12,14 @@
 #include <signal.h>
 #include <stdbool.h>
 
+#define BUFFER_LIMIT (128)
+
 int fd;
 Trama trama;
 struct termios oldtio;
 struct termios newtio;
 LinkLayer linker;
-unsigned char buffer[128];
+unsigned char buffer[BUFFER_LIMIT];
 unsigned char *bigBuffer;
 int bigBufferSize = 0;
 int dataFlag = 0;
@@ -47,7 +49,7 @@ int llopen(LinkLayer connectionParameters)
     // TODO
     linker = connectionParameters;
 
-    int fd = open(linker.serialPort, O_RDWR | O_NOCTTY);
+    fd = open(linker.serialPort, O_RDWR | O_NOCTTY);
 
     if (fd < 0)
     {
@@ -111,7 +113,7 @@ int llopen(LinkLayer connectionParameters)
 
             while (alarmEnabled && !flag)
             {
-                int bytes = read(fd, buffer, 128);
+                int bytes = read(fd, buffer, BUFFER_LIMIT);
 
                 if (bytes < 0)
                     return -1;
@@ -138,7 +140,7 @@ int llopen(LinkLayer connectionParameters)
         trama.state = S_START;
         while (!flag)
         {
-            int bytes = read(fd, buffer, 128);
+            int bytes = read(fd, buffer, BUFFER_LIMIT);
 
             if (bytes < 0)
                 return -1;
@@ -193,6 +195,7 @@ int llwrite(const unsigned char *buf, int bufSize)
         i += bytes;
     }
     printf("\n-------------------------------------\n");
+
     int gotPacket = 0;
     int sendAgain = 0;
     int retransmitions = 0;
@@ -228,7 +231,8 @@ int llwrite(const unsigned char *buf, int bufSize)
         }
         printf("%d %d sendAgain retransmission\n", sendAgain, retransmitions);
 
-        int bytesRead = read(fd, buffer, 128);
+        printf("Before read in llwrite\n");
+        int bytesRead = read(fd, buffer, BUFFER_LIMIT);
 
         printf("bytes read %d\n", bytesRead);
         if (bytesRead < 0)
@@ -269,26 +273,26 @@ int llread(unsigned char *packet)
     printf("LLREAD\n");
     int frameSize;
 
-    if (bigBufferSize < 128)
+    if (bigBufferSize < BUFFER_LIMIT)
     {
         if (bigBufferSize == 0)
-            bigBuffer = malloc(128);
+            bigBuffer = malloc(BUFFER_LIMIT);
         else
-            bigBuffer = realloc(bigBuffer, 128);
+            bigBuffer = realloc(bigBuffer, BUFFER_LIMIT);
     }
 
-    int gotPacket = 0;
+    int gotDISC = 0;
     trama.data = packet;
 
-    while (!gotPacket)
+    while (!gotDISC)
     {
         printf("Before read1 LLREAD\n");
-        int bytesRead = read(fd, bigBuffer, 128);
-        printf("After read1 LLREAD\n");
+        int bytesRead = read(fd, bigBuffer, BUFFER_LIMIT);
+        printf("After read1 LLREAD %d\n", bytesRead);
         if (bytesRead < 0)
             return -1;
 
-        for (int i = 0; i < bytesRead && !gotPacket; i++)
+        for (int i = 0; i < bytesRead && !gotDISC; i++)
         {
             state_machine_handler(&trama, bigBuffer[i]);
             if (trama.state == S_REJ && trama.adr == A_SEND)
@@ -326,7 +330,7 @@ int llread(unsigned char *packet)
 
             if (trama.ctrl == C_DISC)
             {
-                gotPacket = 1;
+                gotDISC = 1;
                 frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
                 write(fd, buffer, frameSize);
                 printf("DISCONNECTED\n");
