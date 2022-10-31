@@ -5,6 +5,16 @@
 // HELPER FUNCTIONS
 ///////////////////////////////////////////
 
+/**
+ * @brief Create a Information frame
+ *
+ * @param buffer
+ * @param data
+ * @param data_size
+ * @param address
+ * @param control
+ * @return int
+ */
 int createInfoFrame(unsigned char *buffer, const unsigned char *data, unsigned int data_size, unsigned char address, unsigned char control)
 {
     buffer[0] = FLAG;
@@ -25,6 +35,14 @@ int createInfoFrame(unsigned char *buffer, const unsigned char *data, unsigned i
     return added_length + 5;
 }
 
+/**
+ * @brief creates SU frame
+ *
+ * @param buffer
+ * @param address
+ * @param control
+ * @return int
+ */
 int createSUFrame(unsigned char *buffer, unsigned char address, unsigned control)
 {
 
@@ -42,20 +60,15 @@ unsigned char createBCC_header(unsigned char address, unsigned char control)
     return address ^ control;
 }
 
-// bcc2
-unsigned char createBCC2(unsigned char *frame, int length)
-{
-
-    unsigned char bcc = frame[0];
-
-    for (int i = 1; i < length; i++)
-    {
-        bcc ^= frame[i];
-    }
-
-    return bcc;
-}
-
+/**
+ * @brief inserts noninformation bits into data to be transfered
+ *
+ * @param frame
+ * @param sizeBuffer
+ * @param data
+ * @param bcc
+ * @return int
+ */
 int byteStuffing(const unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc)
 {
     int size = 0;
@@ -85,6 +98,12 @@ int byteStuffing(const unsigned char *frame, int sizeBuffer, unsigned char *data
 // STATE MACHINE
 ///////////////////////////////////////////
 
+/**
+ * @brief state machine to handle the information of the frame and how to behave
+ *
+ * @param trama
+ * @param byte
+ */
 void state_machine_handler(Trama *trama, unsigned char byte)
 {
     switch (trama->state)

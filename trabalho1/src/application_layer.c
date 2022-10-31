@@ -11,6 +11,15 @@
 
 unsigned char app[BUF_SIZE];
 
+/**
+ * @brief  reads next tlv
+ *
+ * @param buf
+ * @param type
+ * @param length
+ * @param value
+ * @return int
+ */
 int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value)
 {
     *type = buf[0];
@@ -19,6 +28,16 @@ int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, uns
     return 2 + *length;
 }
 
+/**
+ * @brief Application Layer
+ *
+ * @param serialPort
+ * @param role
+ * @param baudRate
+ * @param nTries
+ * @param timeout
+ * @param filename
+ */
 void applicationLayer(const char *serialPort, const char *role, int baudRate, int nTries, int timeout, const char *filename)
 {
 
