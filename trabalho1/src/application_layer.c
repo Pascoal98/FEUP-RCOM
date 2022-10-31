@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-unsigned char buffer[BUF_SIZE];
+unsigned char app[BUF_SIZE + 30];
 
 int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value)
 {
@@ -58,16 +58,16 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         printf("Total size of the file = %lu bytes\n", len);
         fseek(fp, 0, SEEK_SET);
 
-        buffer[0] = CTRL_START;
-        buffer[1] = T_SIZE;
-        buffer[2] = sizeof(long);
+        app[0] = CTRL_START;
+        app[1] = T_SIZE;
+        app[2] = sizeof(long);
         printf("------------Link Layer Write\n");
 
-        *((long *)(buffer + 3)) = len;
+        *((long *)(app + 3)) = len;
 
         int flag = 0;
 
-        if (llwrite(buffer, 10) == -1)
+        if (llwrite(app, 10) == -1)
         {
             printf("Error llwrite\n");
             flag = 1;
@@ -77,7 +77,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         for (unsigned char i = 0; bytesRead < len && flag == 0; i++)
         {
-            unsigned long fileBytes = fread(buffer + 4, 1, (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE), fp);
+            unsigned long fileBytes = fread(app + 4, 1, (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE), fp);
 
             if (fileBytes != (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE))
             {
@@ -86,12 +86,12 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 break;
             }
 
-            buffer[0] = CTRL_DATA;
-            buffer[1] = i;
-            buffer[2] = fileBytes >> 8;
-            buffer[3] = fileBytes % 256;
+            app[0] = CTRL_DATA;
+            app[1] = i;
+            app[2] = fileBytes >> 8;
+            app[3] = fileBytes % 256;
 
-            if (llwrite(buffer, fileBytes + 4) == -1)
+            if (llwrite(app, fileBytes + 4) == -1)
             {
                 printf("Error llwrite\n");
                 flag = 1;
@@ -104,8 +104,8 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         if (!flag)
         {
-            buffer[0] = CTRL_END;
-            if (llwrite(buffer, 1) == -1)
+            app[0] = CTRL_END;
+            if (llwrite(app, 1) == -1)
             {
                 printf("Error llwrite\n");
             }
@@ -132,22 +132,23 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         printf("------------Link Layer Read\n");
 
-        int bytesRead = llread(buffer);
+        int bytesRead = llread(app);
         printf("bytes read %d \n", bytesRead);
 
         unsigned char type, length, *value;
 
-        if (buffer[0] == CTRL_START)
+        if (app[0] == CTRL_START)
         {
+            printf("ENTROU AQUI CRL!\n");
             int offset = 1;
             for (; offset < bytesRead;)
             {
-                offset += next_tlv(buffer, &type, &length, &value);
+                offset += next_tlv(app + offset, &type, &length, &value);
 
                 if (type == T_SIZE)
                 {
                     len = *((unsigned int *)value);
-                    printf("File Size: %d", len);
+                    printf("File Size: %d\n", len);
                 }
             }
 
@@ -167,52 +168,66 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
             for (; fileReceived < len;)
             {
-                int numberBytes = llread(buffer);
+                int numberBytes = llread(app);
 
                 if (numberBytes < 1)
                 {
-                    printf("Error with llread\n");
-                    break;
+                    if (numberBytes == -1)
+                    {
+                        printf("Error llread\n");
+                        break;
+                    }
+                    else
+                    {
+                        printf("Error package too small\n");
+                    }
                 }
 
-                if (buffer[0] == CTRL_END)
+                if (app[0] == CTRL_END)
                 {
                     printf("Disconnected!\n");
                     earlyStop = 1;
                     break;
                 }
 
-                if (buffer[1] == CTRL_DATA)
+                if (app[0] == CTRL_DATA)
                 {
-                    if (buffer[1] != lastNumber)
+                    if (numberBytes < 5)
+                    {
+                        printf("Error package small\n");
+                    }
+                    if (app[1] != lastNumber)
                     {
                         printf("Received wrong sequence!\n");
                     }
                     else
                     {
-                        unsigned int size = buffer[3] + buffer[2] * 256;
-
-                        fwrite(buffer + 4, 1, size, fp);
+                        unsigned int size = app[3] + app[2] * 256;
+                        fwrite(app + 4, 1, size, fp);
                         fileReceived += size;
+                        printf("Received packet number %i \n", lastNumber++);
                     }
                 }
             }
             if (!earlyStop)
             {
-                int numberBytes = llread(buffer);
+                int numberBytes = llread(app);
 
                 if (numberBytes < 1)
                 {
                     printf("Error with llread\n");
                 }
 
-                if (buffer[0] == CTRL_END)
+                if (app[0] == CTRL_END)
                 {
                     printf("Disconnected, done sending!\n");
                 }
                 else
                 {
                     printf("Error received wrong package!\n");
+                    for (unsigned int i = 0; i < 10; ++i)
+                        printf("%i ", app[i]);
+                    printf("\n");
                 }
             }
             fclose(fp);
@@ -221,7 +236,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         {
             printf("Didn't start with start package\n");
             for (unsigned int i = 0; i < 10; ++i)
-                printf("%i ", buffer[i]);
+                printf("%i ", app[i]);
             printf("\n");
         }
     }

@@ -230,10 +230,7 @@ int llwrite(const unsigned char *buf, int bufSize)
             retransmitions++;
         }
 
-        printf("Before read in llwrite\n");
         int byteLido = read(fd, buffer, BUFFER_LIMIT);
-        printf("bytes read %d\n", byteLido);
-        sleep(1);
 
         if (byteLido < 0)
             return -1;
@@ -243,7 +240,7 @@ int llwrite(const unsigned char *buf, int bufSize)
 
             state_machine_handler(&trama, buffer[i]);
 
-            printf("%d\n", trama.state);
+            printf("Current State -->%d\n", trama.state);
             if (trama.state == S_END)
             {
                 if (trama.adr == A_SEND && (trama.ctrl == C_RR_(0) || trama.ctrl == C_RR_(1)))
@@ -293,9 +290,7 @@ int llread(unsigned char *packet)
     while (!receivedPacket)
     {
 
-        printf("Before read1 LLREAD\n");
         int bytesRead = read(fd, bigBuffer, BUFFER_LIMIT);
-        printf("After read1 LLREAD %d\n", bytesRead);
 
         if (bytesRead < 0)
             return -1;

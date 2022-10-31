@@ -90,18 +90,14 @@ void state_machine_handler(Trama *trama, unsigned char byte)
     switch (trama->state)
     {
     case S_REJ:
-        printf("S_REJ\n");
     case S_END:
-        printf("S_END\n");
         trama->state = S_START;
     case S_START:
-        printf("S_Start\n");
         if (byte == FLAG)
             trama->state = S_FLAG;
         break;
 
     case S_FLAG:
-        printf("S_FLAG\n");
         trama->data_size = 0;
         if (byte == A_SEND || byte == A_RESPONSE)
         {
@@ -115,7 +111,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
 
     case S_ADR:
-        printf("S_ADR\n");
         if (byte == C_SET || byte == C_DISC || byte == C_UA || byte == C_RR_(0) || byte == C_RR_(1) || byte == C_RJ_(0) || byte == C_RJ_(1) || byte == C_DATA_(0) || byte == C_DATA_(1))
         {
             trama->state = S_CTRL;
@@ -132,7 +127,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
 
     case S_CTRL:
-        printf("S_ctrl\n");
         if (byte == trama->bcc)
         {
             trama->state = S_BCC1;
@@ -147,7 +141,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
 
     case S_BCC1:
-        printf("S_bcc1\n");
         if (byte == FLAG)
         {
             if (trama->ctrl == C_DATA_(0) || trama->ctrl == C_DATA_(1))
@@ -176,7 +169,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
 
     case S_BCC2:
-        printf("S_bcc2\n");
         if (byte == 0)
         {
             trama->data[trama->data_size++] = trama->bcc;
@@ -201,31 +193,25 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         trama->state = S_DATA;
         break;
     case S_DATA:
-        printf("S_DATA\n");
         if (byte == trama->bcc)
         {
-            printf("S_DATA BCC2\n");
             trama->state = S_BCC2;
             break;
         }
         if (byte == ESC_BYTE)
         {
-            printf("S_DATA ESC_BYTE\n");
             trama->state = S_ESC;
             break;
         }
         if (byte == FLAG)
         {
-            printf("S_DATA FLAG\n");
             trama->state = S_REJ;
             break;
         }
-        printf("S_DATA STAYING \n");
         trama->data[trama->data_size++] = byte;
         trama->bcc = createBCC_header(trama->bcc, byte);
         break;
     case S_ESC:
-        printf("S_esc\n");
         if (byte == BYTE_STUFFING_ESCAPE)
         {
             if (trama->bcc == ESC_BYTE)
