@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-unsigned char app[BUF_SIZE + 30];
+unsigned char app[BUF_SIZE];
 
 int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value)
 {
@@ -138,10 +138,10 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         if (app[0] == CTRL_START)
         {
-            int offset = 1;
-            for (; offset < bytesRead;)
+            int jump = 1;
+            while (jump < bytesRead)
             {
-                offset += next_tlv(app + offset, &type, &length, &value);
+                jump += next_tlv(app + jump, &type, &length, &value);
 
                 if (type == T_SIZE)
                 {
@@ -157,14 +157,13 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 perror("Error creating the file.\n");
                 exit(1);
             }
-            else
-            {
-                printf("File has been created!\n");
-            }
 
-            unsigned char earlyStop = 0, lastNumber = 0;
+            printf("File has been created!\n");
 
-            for (; fileReceived < len;)
+            int reachedEND = 1;
+            unsigned char lastNumber = 0;
+
+            while (fileReceived < len)
             {
                 int numberBytes = llread(app);
 
@@ -184,16 +183,13 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 if (app[0] == CTRL_END)
                 {
                     printf("Disconnected!\n");
-                    earlyStop = 1;
+                    reachedEND = 0;
                     break;
                 }
 
                 if (app[0] == CTRL_DATA)
                 {
-                    if (numberBytes < 5)
-                    {
-                        printf("Error package small\n");
-                    }
+
                     if (app[1] != lastNumber)
                     {
                         printf("Received wrong sequence!\n");
@@ -207,11 +203,11 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                     }
                 }
             }
-            if (!earlyStop)
+            if (reachedEND)
             {
                 int numberBytes = llread(app);
 
-                if (numberBytes < 1)
+                if (numberBytes <= 0)
                 {
                     printf("Error with llread\n");
                 }
