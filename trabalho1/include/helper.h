@@ -30,6 +30,8 @@ typedef struct
     unsigned int data_size;
 } Trama;
 
+Trama trama;
+
 int createInfoFrame(unsigned char *buffer, const unsigned char *data, unsigned int data_size, unsigned char address, unsigned char control);
 
 int createSUFrame(unsigned char *buffer, unsigned char address, unsigned control);

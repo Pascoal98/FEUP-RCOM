@@ -59,7 +59,7 @@ unsigned char createBCC2(unsigned char *frame, int length)
 int byteStuffing(const unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc)
 {
     int size = 0;
-    for (int i = 0; i < sizeBuffer; i++)
+    for (unsigned int i = 0; i < sizeBuffer; i++)
     {
         if (bcc != NULL)
             *bcc ^= frame[i];
@@ -89,6 +89,11 @@ void state_machine_handler(Trama *trama, unsigned char byte)
 {
     switch (trama->state)
     {
+    case S_REJ:
+        printf("S_REJ\n");
+    case S_END:
+        printf("S_END\n");
+        trama->state = S_START;
     case S_START:
         printf("S_Start\n");
         if (byte == FLAG)
@@ -97,6 +102,7 @@ void state_machine_handler(Trama *trama, unsigned char byte)
 
     case S_FLAG:
         printf("S_FLAG\n");
+        trama->data_size = 0;
         if (byte == A_SEND || byte == A_RESPONSE)
         {
             trama->state = S_ADR;
@@ -109,8 +115,8 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         break;
 
     case S_ADR:
-        printf("S_adr\n");
-        if (byte == C_SET || byte == C_DISC || byte == C_UA || byte == C_RR_(0) || byte == C_RR_(1) || byte == C_RJ_(0) || byte == C_RJ_(1))
+        printf("S_ADR\n");
+        if (byte == C_SET || byte == C_DISC || byte == C_UA || byte == C_RR_(0) || byte == C_RR_(1) || byte == C_RJ_(0) || byte == C_RJ_(1) || byte == C_DATA_(0) || byte == C_DATA_(1))
         {
             trama->state = S_CTRL;
             trama->ctrl = byte;
@@ -157,6 +163,7 @@ void state_machine_handler(Trama *trama, unsigned char byte)
             trama->data_size = 0;
             if (byte == ESC_BYTE)
             {
+                trama->bcc = 0;
                 trama->state = S_ESC;
                 break;
             }
@@ -174,10 +181,18 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         {
             trama->data[trama->data_size++] = trama->bcc;
             trama->bcc = 0;
+            break;
         }
         if (byte == FLAG)
         {
-            trama->state = S_FLAG;
+            trama->state = S_END;
+            break;
+        }
+        if (byte == ESC_BYTE)
+        {
+            trama->data[trama->data_size++] = trama->bcc;
+            trama->bcc = 0;
+            trama->state = S_ESC;
             break;
         }
         trama->data[trama->data_size++] = trama->bcc;
@@ -186,22 +201,26 @@ void state_machine_handler(Trama *trama, unsigned char byte)
         trama->state = S_DATA;
         break;
     case S_DATA:
-        printf("S_data\n");
+        printf("S_DATA\n");
         if (byte == trama->bcc)
         {
+            printf("S_DATA BCC2\n");
             trama->state = S_BCC2;
             break;
         }
         if (byte == ESC_BYTE)
         {
+            printf("S_DATA ESC_BYTE\n");
             trama->state = S_ESC;
             break;
         }
         if (byte == FLAG)
         {
+            printf("S_DATA FLAG\n");
             trama->state = S_REJ;
             break;
         }
+        printf("S_DATA STAYING \n");
         trama->data[trama->data_size++] = byte;
         trama->bcc = createBCC_header(trama->bcc, byte);
         break;
@@ -237,13 +256,6 @@ void state_machine_handler(Trama *trama, unsigned char byte)
             break;
         }
         trama->state = S_START;
-        break;
-    case S_END:
-        printf("S_end\n");
-        trama->state = S_START;
-        break;
-    case S_REJ:
-        printf("S_REJ\n");
         break;
     }
 }

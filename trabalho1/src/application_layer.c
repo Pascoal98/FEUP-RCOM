@@ -16,7 +16,7 @@ int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, uns
     *type = buf[0];
     *length = buf[1];
     *value = buf + 2;
-    return *length + 2;
+    return 2 + *length;
 }
 
 void applicationLayer(const char *serialPort, const char *role, int baudRate, int nTries, int timeout, const char *filename)
@@ -53,18 +53,17 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
             printf("File has been opened!\n");
         }
 
-        fseek(fp, 0, SEEK_END);
-        int len = ftell(fp);
-        printf("Total size of the file = %d bytes\n", len);
+        fseek(fp, 0L, SEEK_END);
+        long int len = ftell(fp);
+        printf("Total size of the file = %lu bytes\n", len);
         fseek(fp, 0, SEEK_SET);
 
         buffer[0] = CTRL_START;
         buffer[1] = T_SIZE;
-        buffer[2] = sizeof(int);
-
+        buffer[2] = sizeof(long);
         printf("------------Link Layer Write\n");
 
-        *((int *)(buffer + 3)) = len;
+        *((long *)(buffer + 3)) = len;
 
         int flag = 0;
 
@@ -76,9 +75,16 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         unsigned long bytesRead = 0;
 
-        for (unsigned char i = 0; bytesRead < len && !flag; i++)
+        for (unsigned char i = 0; bytesRead < len && flag == 0; i++)
         {
             unsigned long fileBytes = fread(buffer + 4, 1, (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE), fp);
+
+            if (fileBytes != (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE))
+            {
+                printf("Error while reading file, fileBytes:%lu , bytesRead:%lu len:%lu \n", fileBytes, bytesRead, len);
+                flag = 1;
+                break;
+            }
 
             buffer[0] = CTRL_DATA;
             buffer[1] = i;
@@ -92,7 +98,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 break;
             }
 
-            printf("File sent!\n");
+            printf("File sent %i!\n", i);
             bytesRead += fileBytes;
         }
 
@@ -127,6 +133,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         printf("------------Link Layer Read\n");
 
         int bytesRead = llread(buffer);
+        printf("bytes read %d \n", bytesRead);
 
         unsigned char type, length, *value;
 
@@ -213,6 +220,9 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         else
         {
             printf("Didn't start with start package\n");
+            for (unsigned int i = 0; i < 10; ++i)
+                printf("%i ", buffer[i]);
+            printf("\n");
         }
     }
 

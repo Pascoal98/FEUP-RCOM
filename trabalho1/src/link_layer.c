@@ -15,7 +15,6 @@
 #define BUFFER_LIMIT (128)
 
 int fd;
-Trama trama;
 struct termios oldtio;
 struct termios newtio;
 LinkLayer linker;
@@ -25,6 +24,7 @@ int bigBufferSize = 0;
 int dataFlag = 0;
 int timeoutStats = 0;
 int retransmitionsStats = 0;
+int gotDISC = 0;
 
 // Alarm Setup
 int alarmEnabled = FALSE;
@@ -186,7 +186,7 @@ int llwrite(const unsigned char *buf, int bufSize)
     int tramaSize = createInfoFrame(bigBuffer, buf, bufSize, A_SEND, C_DATA_(dataFlag));
 
     printf("Trama size %d\n", tramaSize);
-    printf("\n-------------------------------------\n");
+
     for (unsigned int i = 0; i < tramaSize;)
     {
         int bytes = write(fd, bigBuffer + i, tramaSize - i);
@@ -194,7 +194,6 @@ int llwrite(const unsigned char *buf, int bufSize)
             return -1;
         i += bytes;
     }
-    printf("\n-------------------------------------\n");
 
     int gotPacket = 0;
     int sendAgain = 0;
@@ -202,8 +201,9 @@ int llwrite(const unsigned char *buf, int bufSize)
 
     trama.data = NULL;
     alarmEnabled = TRUE;
+
     alarm(linker.timeout);
-    if (!gotPacket)
+    while (!gotPacket)
     {
         if (!alarmEnabled)
         {
@@ -229,16 +229,16 @@ int llwrite(const unsigned char *buf, int bufSize)
             sendAgain = 0;
             retransmitions++;
         }
-        printf("%d %d sendAgain retransmission\n", sendAgain, retransmitions);
 
         printf("Before read in llwrite\n");
-        int bytesRead = read(fd, buffer, BUFFER_LIMIT);
+        int byteLido = read(fd, buffer, BUFFER_LIMIT);
+        printf("bytes read %d\n", byteLido);
+        sleep(1);
 
-        printf("bytes read %d\n", bytesRead);
-        if (bytesRead < 0)
+        if (byteLido < 0)
             return -1;
 
-        for (int i = 0; i < bytesRead && !gotPacket && !alarmEnabled; i++)
+        for (unsigned int i = 0; i < byteLido && !gotPacket && alarmEnabled; ++i)
         {
 
             state_machine_handler(&trama, buffer[i]);
@@ -261,7 +261,14 @@ int llwrite(const unsigned char *buf, int bufSize)
             }
         }
     }
-    dataFlag = dataFlag ? 0 : 1;
+    if (dataFlag == 0)
+    {
+        dataFlag = 1;
+    }
+    else
+    {
+        dataFlag = 0;
+    }
     return 0;
 }
 
@@ -271,7 +278,6 @@ int llwrite(const unsigned char *buf, int bufSize)
 int llread(unsigned char *packet)
 {
     printf("LLREAD\n");
-    int frameSize;
 
     if (bigBufferSize < BUFFER_LIMIT)
     {
@@ -281,23 +287,25 @@ int llread(unsigned char *packet)
             bigBuffer = realloc(bigBuffer, BUFFER_LIMIT);
     }
 
-    int gotDISC = 0;
+    int receivedPacket = 0;
     trama.data = packet;
 
-    while (!gotDISC)
+    while (!receivedPacket)
     {
+
         printf("Before read1 LLREAD\n");
         int bytesRead = read(fd, bigBuffer, BUFFER_LIMIT);
         printf("After read1 LLREAD %d\n", bytesRead);
+
         if (bytesRead < 0)
             return -1;
 
-        for (int i = 0; i < bytesRead && !gotDISC; i++)
+        for (unsigned int i = 0; i < bytesRead; ++i)
         {
             state_machine_handler(&trama, bigBuffer[i]);
             if (trama.state == S_REJ && trama.adr == A_SEND)
             {
-                frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
+                int frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
 
                 write(fd, buffer, frameSize);
                 printf("RJ SENT\n");
@@ -305,7 +313,7 @@ int llread(unsigned char *packet)
 
             if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_SET)
             {
-                frameSize = createSUFrame(buffer, A_SEND, C_UA);
+                int frameSize = createSUFrame(buffer, A_SEND, C_UA);
                 write(fd, buffer, frameSize);
                 printf("UA SENT\n");
             }
@@ -315,15 +323,23 @@ int llread(unsigned char *packet)
                 if (trama.ctrl == C_DATA_(dataFlag))
                 {
 
-                    dataFlag = dataFlag ? 0 : 1;
+                    if (dataFlag == 0)
+                    {
+                        dataFlag = 1;
+                    }
+                    else
+                    {
+                        dataFlag = 0;
+                    }
 
-                    frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
+                    int frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
                     write(fd, buffer, frameSize);
+                    printf("Sent RR %i\n", dataFlag);
                     return trama.data_size;
                 }
                 else
                 {
-                    frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
+                    int frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
                     write(fd, buffer, frameSize);
                 }
             }
@@ -331,7 +347,7 @@ int llread(unsigned char *packet)
             if (trama.ctrl == C_DISC)
             {
                 gotDISC = 1;
-                frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
+                int frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
                 write(fd, buffer, frameSize);
                 printf("DISCONNECTED\n");
                 return -1;
