@@ -81,7 +81,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
             if (fileBytes != (len - bytesRead < BUF_SIZE ? len - bytesRead : BUF_SIZE))
             {
-                printf("Error while reading file, fileBytes:%lu , bytesRead:%lu len:%lu \n", fileBytes, bytesRead, len);
                 flag = 1;
                 break;
             }
@@ -139,7 +138,6 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         if (app[0] == CTRL_START)
         {
-            printf("ENTROU AQUI CRL!\n");
             int offset = 1;
             for (; offset < bytesRead;)
             {
@@ -205,7 +203,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                         unsigned int size = app[3] + app[2] * 256;
                         fwrite(app + 4, 1, size, fp);
                         fileReceived += size;
-                        printf("Received packet number %i \n", lastNumber++);
+                        lastNumber++;
                     }
                 }
             }
@@ -220,12 +218,12 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
                 if (app[0] == CTRL_END)
                 {
-                    printf("Disconnected, done sending!\n");
+                    printf("Disconnecting, done!\n");
                 }
                 else
                 {
                     printf("Error received wrong package!\n");
-                    for (unsigned int i = 0; i < 10; ++i)
+                    for (unsigned int i = 0; i < 10; i++)
                         printf("%i ", app[i]);
                     printf("\n");
                 }
@@ -235,7 +233,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         else
         {
             printf("Didn't start with start package\n");
-            for (unsigned int i = 0; i < 10; ++i)
+            for (unsigned int i = 0; i < 10; i++)
                 printf("%i ", app[i]);
             printf("\n");
         }
