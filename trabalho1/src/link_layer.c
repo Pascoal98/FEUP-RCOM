@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <time.h>
 
 #define BUFFER_LIMIT (128)
 
@@ -24,6 +25,8 @@ int bigBufferSize = 0;
 int dataFlag = 0;
 int timeoutStats = 0;
 int retransmitionsStats = 0;
+clock_t start, end;
+
 int gotDISC = 0;
 
 // Alarm Setup
@@ -46,6 +49,8 @@ void alarmHandler(int signal)
 int llopen(LinkLayer connectionParameters)
 {
     printf("LLOPEN\n");
+    start = clock();
+
     // TODO
     linker = connectionParameters;
 
@@ -274,6 +279,7 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
+    sleep(2);
     printf("LLREAD\n");
 
     if (bigBufferSize < BUFFER_LIMIT)
@@ -359,6 +365,8 @@ int llread(unsigned char *packet)
 int llclose(int showStatistics)
 {
     printf("LLCLOSE\n");
+    end = clock();
+    double time_taken = ((double)(end - start))/CLOCKS_PER_SEC;
     (void)signal(SIGALRM, alarmHandler);
 
     if (bigBufferSize > 0)
@@ -370,9 +378,11 @@ int llclose(int showStatistics)
         perror("tcsetattr");
         exit(-1);
     }
-    printf("STATISTICS : \n");
+    printf("STATISTICS FOR TRANSMITTER: \n");
     printf("TIME OUT : %d\n", timeoutStats);
     printf("RETRANSMITIONS : %d\n", retransmitionsStats);
+    printf("\n");
+    printf("Time taken on this side: %f\n", time_taken);
 
     return 1;
 }

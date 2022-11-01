@@ -55,6 +55,13 @@ int createSUFrame(unsigned char *buffer, unsigned char address, unsigned control
     return 5;
 }
 
+/**
+ * @brief creates bcc1
+ *
+ * @param address
+ * @param control
+ * @return unsigned char
+ */
 unsigned char createBCC_header(unsigned char address, unsigned char control)
 {
     return address ^ control;
