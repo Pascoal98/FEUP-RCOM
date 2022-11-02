@@ -31,7 +31,6 @@ int createInfoFrame(unsigned char *buffer, const unsigned char *data, unsigned i
     added_length += byteStuffing(&bcc, 1, buffer + added_length + 4, NULL);
     buffer[added_length + 4] = FLAG;
 
-    printf("Added length : %d\n", added_length);
     return added_length + 5;
 }
 

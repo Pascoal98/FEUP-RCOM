@@ -86,7 +86,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
         int flag = 0;
 
-        if (llwrite(app, 10) == -1)
+        if (llwrite(app, 5) == -1)
         {
             printf("Error llwrite\n");
             flag = 1;
