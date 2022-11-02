@@ -111,7 +111,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
             if (llwrite(app, fileBytes + 4) == -1)
             {
-                printf("Error llwrite\n");
+                printf("Error llwrite\n"); // debugging
                 flag = 1;
                 break;
             }
@@ -125,11 +125,11 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
             app[0] = CTRL_END;
             if (llwrite(app, 1) == -1)
             {
-                printf("Error llwrite\n");
+                printf("Error llwrite\n"); // debugging
             }
             else
             {
-                printf("Done!\n");
+                printf("Done!\n"); // debugging
             }
         }
         fclose(fp);
@@ -140,7 +140,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         printf("rx \n");
         if (llopen(l_layer) == -1)
         {
-            fprintf(stderr, "Couldn't open link layer\n");
+            fprintf(stderr, "Couldn't open link layer\n"); // debugging
             exit(1);
         }
 
@@ -151,7 +151,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         printf("------------Link Layer Read\n");
 
         int bytesRead = llread(app);
-        printf("bytes read %d \n", bytesRead);
+        printf("bytes read %d \n", bytesRead); // debugging
 
         unsigned char type, length, *value;
 
@@ -165,7 +165,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 if (type == T_SIZE)
                 {
                     len = *((unsigned int *)value);
-                    printf("File Size: %d\n", len);
+                    printf("File Size: %d\n", len); // debugging
                 }
             }
 
@@ -173,11 +173,11 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
             if (fp == NULL)
             {
-                perror("Error creating the file.\n");
+                perror("Error creating the file.\n"); // debugging
                 exit(1);
             }
 
-            printf("File has been created!\n");
+            printf("File has been created!\n"); // debugging
 
             int reachedEND = 1;
             unsigned char lastNumber = 0;
@@ -190,12 +190,12 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 {
                     if (numberBytes == -1)
                     {
-                        printf("Error llread\n");
+                        printf("Error llread\n"); // debugging
                         break;
                     }
                     else
                     {
-                        printf("Error package too small\n");
+                        printf("Error package too small\n"); // debugging
                     }
                 }
 
@@ -211,7 +211,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
                     if (app[1] != lastNumber)
                     {
-                        printf("Received wrong sequence!\n");
+                        printf("Error!\n"); // debugging
                     }
                     else
                     {
@@ -228,7 +228,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
 
                 if (numberBytes <= 0)
                 {
-                    printf("Error with llread\n");
+                    printf("Error with llread\n"); // debugging
                 }
 
                 if (app[0] == CTRL_END)
@@ -237,7 +237,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
                 }
                 else
                 {
-                    printf("Error received wrong package!\n");
+                    printf("Error received wrong package!\n"); // debugging
                     for (unsigned int i = 0; i < 10; i++)
                         printf("%i ", app[i]);
                     printf("\n");
@@ -247,7 +247,7 @@ void applicationLayer(const char *serialPort, const char *role, int baudRate, in
         }
         else
         {
-            printf("Didn't start with start package\n");
+            printf("Didn't start with start package\n"); // debugging
             for (unsigned int i = 0; i < 10; i++)
                 printf("%i ", app[i]);
             printf("\n");

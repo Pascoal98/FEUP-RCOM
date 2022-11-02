@@ -134,7 +134,7 @@ int llopen(LinkLayer connectionParameters)
         }
 
         if (flag)
-            printf("UA received successfully!\n");
+            printf("UA received successfully!\n"); // debugging
         else
             return -1;
         return 1;
@@ -155,7 +155,7 @@ int llopen(LinkLayer connectionParameters)
                 state_machine_handler(&trama, buffer[i]);
                 if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_DISC)
                 {
-                    printf("Disconnected!\n");
+                    printf("Disconnected!\n"); // debugging
                     return -1;
                 }
                 if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_SET)
@@ -164,7 +164,7 @@ int llopen(LinkLayer connectionParameters)
         }
 
         if (flag)
-            printf("SET received successfully!\n");
+            printf("SET received successfully!\n"); // debugging
 
         int tramaSize = createSUFrame(buffer, A_SEND, C_UA);
         write(fd, buffer, tramaSize);
@@ -179,7 +179,7 @@ int llopen(LinkLayer connectionParameters)
 ////////////////////////////////////////////////
 int llwrite(const unsigned char *buf, int bufSize)
 {
-    printf("LLWRITE\n");
+    printf("LLWRITE\n"); // debugging
     if (bigBufferSize < bufSize * 2 + 10)
     {
         if (bigBufferSize == 0)
@@ -216,14 +216,14 @@ int llwrite(const unsigned char *buf, int bufSize)
             alarmEnabled = TRUE;
             alarm(linker.timeout);
         }
-        if (sendAgain)
+        if (sendAgain) // checks if the package wasn't sent
         {
             if (retransmitions > 0)
                 timeoutStats++;
             if (retransmitions == linker.nRetransmissions)
                 return -1;
 
-            for (unsigned int i = 0; i < tramaSize;) // sendAgain package
+            for (unsigned int i = 0; i < tramaSize;)
             {
                 int bytesWritten = write(fd, bigBuffer + i, tramaSize - i);
                 if (bytesWritten == -1)
@@ -251,8 +251,6 @@ int llwrite(const unsigned char *buf, int bufSize)
                 if (trama.adr == A_SEND && (trama.ctrl == C_RR_(0) || trama.ctrl == C_RR_(1)))
                 {
                     gotPacket = 1;
-                    if (trama.ctrl == C_RR_(dataFlag))
-                        printf("Next packet please\n");
                     sendAgain = 0;
                 }
                 if (trama.adr == A_SEND && trama.ctrl == C_RJ_(dataFlag))
@@ -280,7 +278,7 @@ int llwrite(const unsigned char *buf, int bufSize)
 int llread(unsigned char *packet)
 {
     sleep(2);
-    printf("LLREAD\n");
+    printf("LLREAD\n"); // debugging
 
     if (bigBufferSize < BUFFER_LIMIT)
     {
@@ -309,14 +307,12 @@ int llread(unsigned char *packet)
                 int frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
 
                 write(fd, buffer, frameSize);
-                printf("RJ SENT\n");
             }
 
             if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_SET)
             {
                 int frameSize = createSUFrame(buffer, A_SEND, C_UA);
                 write(fd, buffer, frameSize);
-                printf("UA SENT\n");
             }
 
             if (trama.state == S_END && trama.adr == A_SEND)
@@ -335,7 +331,7 @@ int llread(unsigned char *packet)
 
                     int frameSize = createSUFrame(buffer, A_SEND, C_RR_(dataFlag));
                     write(fd, buffer, frameSize);
-                    printf("Sent RR %i\n", dataFlag);
+                    printf("Sent RR %i\n", dataFlag); // debugging to know if the dataFlag was switching
                     return trama.data_size;
                 }
                 else
@@ -350,7 +346,7 @@ int llread(unsigned char *packet)
                 gotDISC = 1;
                 int frameSize = createSUFrame(buffer, A_SEND, (trama.ctrl == C_DATA_(0) ? C_RJ_(0) : C_RJ_(1)));
                 write(fd, buffer, frameSize);
-                printf("DISCONNECTED\n");
+                printf("DISCONNECTED\n"); // debugging
                 return -1;
                 break;
             }
@@ -366,7 +362,7 @@ int llclose(int showStatistics)
 {
     printf("LLCLOSE\n");
     end = clock();
-    double time_taken = ((double)(end - start))/CLOCKS_PER_SEC;
+    double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
     (void)signal(SIGALRM, alarmHandler);
 
     if (bigBufferSize > 0)
