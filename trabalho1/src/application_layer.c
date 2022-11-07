@@ -12,23 +12,6 @@
 unsigned char app[BUF_SIZE];
 
 /**
- * @brief  reads next tlv
- *
- * @param buf
- * @param type
- * @param length
- * @param value
- * @return int
- */
-int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value)
-{
-    *type = buf[0];
-    *length = buf[1];
-    *value = buf + 2;
-    return 2 + *length;
-}
-
-/**
  * @brief Application Layer
  *
  * @param serialPort

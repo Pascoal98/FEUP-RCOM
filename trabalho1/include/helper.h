@@ -25,7 +25,6 @@ typedef struct
     unsigned char adr;
     unsigned char ctrl;
     unsigned char bcc;
-    unsigned char bcc2;
     unsigned char *data;
     unsigned int data_size;
 } Trama;
@@ -41,6 +40,8 @@ unsigned char createBCC_header(unsigned char address, unsigned char control);
 unsigned char createBCC2(unsigned char *frame, int length);
 
 int byteStuffing(const unsigned char *frame, int sizeBuffer, unsigned char *data, unsigned char *bcc);
+
+int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value);
 
 void state_machine_handler(Trama *trama, unsigned char byte);
 #endif

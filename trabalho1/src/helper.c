@@ -100,6 +100,26 @@ int byteStuffing(const unsigned char *frame, int sizeBuffer, unsigned char *data
     return size;
 }
 
+/////////////////////////////////////////
+////////// TLV
+/////////////////////////////////////////
+/**
+ * @brief  reads next tlv
+ *
+ * @param buf
+ * @param type
+ * @param length
+ * @param value
+ * @return int
+ */
+int next_tlv(unsigned char *buf, unsigned char *type, unsigned char *length, unsigned char **value)
+{
+    *type = buf[0];
+    *length = buf[1];
+    *value = buf + 2;
+    return 2 + *length;
+}
+
 ///////////////////////////////////////////
 // STATE MACHINE
 ///////////////////////////////////////////

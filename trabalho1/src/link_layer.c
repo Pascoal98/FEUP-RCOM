@@ -168,7 +168,6 @@ int llopen(LinkLayer connectionParameters)
 
         int tramaSize = createSUFrame(buffer, A_SEND, C_UA);
         write(fd, buffer, tramaSize);
-        printf("trama size: %d\n", tramaSize);
         return 1;
     }
     return -1;
