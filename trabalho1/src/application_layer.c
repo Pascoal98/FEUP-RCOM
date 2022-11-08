@@ -2,6 +2,7 @@
 
 #include "application_layer.h"
 #include "link_layer.h"
+#include "helper.h"
 #include "macros.h"
 #include <string.h>
 #include <stdio.h>

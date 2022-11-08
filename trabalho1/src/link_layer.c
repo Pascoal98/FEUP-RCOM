@@ -276,7 +276,6 @@ int llwrite(const unsigned char *buf, int bufSize)
 ////////////////////////////////////////////////
 int llread(unsigned char *packet)
 {
-    sleep(2);
     printf("LLREAD\n"); // debugging
 
     if (bigBufferSize < BUFFER_LIMIT)
@@ -308,14 +307,14 @@ int llread(unsigned char *packet)
                 write(fd, buffer, frameSize);
             }
 
-            if (trama.state == S_END && trama.adr == A_SEND && trama.ctrl == C_SET)
-            {
-                int frameSize = createSUFrame(buffer, A_SEND, C_UA);
-                write(fd, buffer, frameSize);
-            }
-
             if (trama.state == S_END && trama.adr == A_SEND)
             {
+
+                if (trama.ctrl == C_SET)
+                {
+                    int frameSize = createSUFrame(buffer, A_SEND, C_UA);
+                    write(fd, buffer, frameSize);
+                }
                 if (trama.ctrl == C_DATA_(dataFlag))
                 {
 
