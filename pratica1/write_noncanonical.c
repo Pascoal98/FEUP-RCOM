@@ -25,18 +25,20 @@
 volatile int STOP = FALSE;
 
 // Define tramas info
-#define FLAG ((unsigned char) 0x7E)
-#define A_SEND ((unsigned char) 0x03)
-#define A_RESPONSE ((unsigned char) 0x01)
-#define C_SET ((unsigned char) 0x03)
-#define C_DISC ((unsigned char) 0x0B)
-#define C_UA ((unsigned char) 0x07)
+#define FLAG ((unsigned char)0x7E)
+#define A_SEND ((unsigned char)0x03)
+#define A_RESPONSE ((unsigned char)0x01)
+#define C_SET ((unsigned char)0x03)
+#define C_DISC ((unsigned char)0x0B)
+#define C_UA ((unsigned char)0x07)
 
-int get_bbc1(unsigned int A, unsigned int C){
-    return A^C;
+int get_bbc1(unsigned int A, unsigned int C)
+{
+    return A ^ C;
 }
 
-int compare_responses(unsigned char msg[], unsigned char msg_received[], int size){
+int compare_responses(unsigned char msg[], unsigned char msg_received[], int size)
+{
     return memcmp(msg, msg_received, size);
 }
 
@@ -52,7 +54,6 @@ void alarmHandler(int signal)
 
     printf("#%d try\n", alarmCount);
 }
-
 
 int main(int argc, char *argv[])
 {
@@ -99,7 +100,7 @@ int main(int argc, char *argv[])
     // Set input mode (non-canonical, no echo,...)
     newtio.c_lflag = 0;
     newtio.c_cc[VTIME] = 30; // Inter-character timer unused
-    newtio.c_cc[VMIN] = 0;  // Blocking read until 5 chars received
+    newtio.c_cc[VMIN] = 0;   // Blocking read until 5 chars received
 
     // VTIME e VMIN should be changed in order to protect with a
     // timeout the reception of the following character(s)
@@ -121,10 +122,11 @@ int main(int argc, char *argv[])
     printf("New termios structure set\n");
 
     // Create set to send
-    unsigned char SET[] = {FLAG,A_SEND,C_SET,get_bbc1(A_SEND,C_SET),FLAG};
+    unsigned char SET[] = {FLAG, A_SEND, C_SET, get_bbc1(A_SEND, C_SET), FLAG};
 
     char c;
-    printf("Click anywhere to send SET"); scanf("%c",&c);
+    printf("Click anywhere to send SET");
+    scanf("%c", &c);
     int bytes = write(fd, SET, 5);
     printf("%d bytes written\n", bytes);
 
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
     sleep(1);
 
     // Get the UA back
-    unsigned char UA[] = {FLAG,A_RESPONSE,C_UA,get_bbc1(A_RESPONSE,C_UA),FLAG};
+    unsigned char UA[] = {FLAG, A_RESPONSE, C_UA, get_bbc1(A_RESPONSE, C_UA), FLAG};
     unsigned char UA_RECEIVED[5];
 
     int read_bytes = 0;
@@ -142,25 +144,31 @@ int main(int argc, char *argv[])
 
     printf("Waiting for response\n---------------------\n");
 
-    for(int i=0;i<3;i++){
+    for (int i = 0; i < 3; i++)
+    {
         // Set an alarm for the 3 second timeout
-        if(alarmEnabled == FALSE) {
+        if (alarmEnabled == FALSE)
+        {
             alarm(3);
             alarmEnabled = TRUE;
-        } 
+        }
         read_bytes = read(fd, UA_RECEIVED, 5);
-        
+
         // If the UA is found, verify if it's valid
-        if(read_bytes > 0 && compare_responses(UA, UA_RECEIVED, sizeof(UA)) == 0) break;
-        
+        if (read_bytes > 0 && compare_responses(UA, UA_RECEIVED, sizeof(UA)) == 0)
+            break;
+
         printf("Response not received, sending another SET\n");
         bytes = write(fd, SET, 5);
         printf("%d bytes written\n---------------------\n", bytes);
     }
 
-    if(read_bytes > 0){ 
+    if (read_bytes > 0)
+    {
         printf("UA received with Success!\n");
-    } else {
+    }
+    else
+    {
         printf("Something went wrong...\n");
     }
 
