@@ -1,0 +1,27 @@
+User: root
+Pass: alanturing
+
+Restart networking service:
+
+systemctl restart networking
+
+ifconfig eth0 up 
+
+ifconfig //mostra dados
+
+ifconfig eth0 172.16.60.1/24  // para o pc 3
+ifconfig eth0 172.16.60.254/24  // para o pc 4
+
+//FAZER PARA AMBOS
+
+route -n //verificar rotas 
+    
+
+abrir wireshark no 3
+
+ping 172.16.60.254/24 //fazer ping para o 4
+
+parar de capturar ao fim de uns segundos
+
+
+                    

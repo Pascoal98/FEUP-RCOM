@@ -1,0 +1,10 @@
+remove bridge:
+
+/interface bridge port remove [find interface =ether1]
+
+add bride:
+
+/interface bridge port add name=bridge60 interface=eth
+/interface bridge port add name=bridge61 interface=eth
+
+ping 172.16.61.1
