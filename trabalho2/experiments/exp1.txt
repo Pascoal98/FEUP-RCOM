@@ -12,6 +12,8 @@ ifconfig //mostra dados
 ifconfig eth0 172.16.60.1/24  // para o pc 3
 ifconfig eth0 172.16.60.254/24  // para o pc 4
 
+//PARTE ACIMA CONFIGURAÇAO
+
 //FAZER PARA AMBOS
 
 route -n //verificar rotas 
