@@ -1,8 +1,16 @@
+
+E1 tux64 - 8 Switch
+
+
 Pc 2:
 
 ifconfig eth0 172.16.61.1/24
 
 //mudar pra pc 4 e gtk terminal
+
+Ligar tux64 S0 ao T3 e o T4 ao mikro tik console
+dont forget baud rate 115200
+system reset-configuration
 
 see brigdes and ports:
 
@@ -11,7 +19,7 @@ see brigdes and ports:
 
 remove bridge:
 
-/interface bridge port remove [find interface =etherX]
+/interface bridge port remove [find interface=etherX]
 
 cria bride:
 
@@ -20,7 +28,7 @@ cria bride:
 
 config bridge:
 
-/interface bridge port add bridge=bridge60 interface=etherX
+/interface bridge port add bridge=bridge60 inerface=etherX
 /interface bridge port add bridge=bridge61 interface=etherX
 
 ping 172.16.61.1

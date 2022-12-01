@@ -1,0 +1,19 @@
+//delete route
+
+
+
+//add default 
+route add default gw ...
+
+/ip address add address=172.16.1.69/24 interface=ether2 //perpetiva do router
+
+//4 as default of 3
+
+//Rc as default do tux2 e 4
+
+/ip route add dst-address=0.0.0.0/0 gateway=172.16.61.254
+
+//add routes 
+
+
+
