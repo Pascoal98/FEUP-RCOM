@@ -1,0 +1,38 @@
+
+E1 tux64 - 8 Switch
+
+
+Pc 2:
+
+ifconfig eth0 172.16.61.1/24
+
+//mudar pra pc 4 e gtk terminal
+
+Ligar tux64 S0 ao T3 e o T4 ao mikro tik console
+dont forget baud rate 115200
+system reset-configuration
+
+see brigdes and ports:
+
+/interface bridge port print brief
+
+
+remove bridge:
+
+/interface bridge port remove [find interface=etherX]
+
+cria bride:
+
+/interface bridge add name=bridge60
+/interface bridge add name=bridge61
+
+config bridge:
+
+/interface bridge port add bridge=bridge60 inerface=etherX
+/interface bridge port add bridge=bridge61 interface=etherX
+
+ping 172.16.61.1
+
+O 3 e o 4 conseguem conectar-se um com o outro enquanto o 2 está isolado
+
+Existem 2 dominios pq ^ isto

@@ -1,0 +1,40 @@
+//Pc 4: 
+
+ifconfig eth1 172.16.61.253/24
+
+// tux63 liga a bridge60, que liga a tux64, tux64 liga a bridge 61 que liga a tux62. 4 é um router
+
+//add 4 to bridge 1 (n esquecer de remover a bridge q a interface tá ligada)
+
+/interface bridge port add bridge=bridge61 interface=etherX
+ 
+//Enable IP forwarding
+
+  echo 1 > /proc/sys/net/ipv4/ip_forward
+
+//Disable ICMP echo ignore broadcast
+
+  echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+
+//observe addresdes
+ifconfig 
+
+(sao diferentes)
+
+//2 manda pro 4
+
+route add -net 172.16.60.0/24 gw 172.16.61.253
+
+//do 3 para o 4
+
+route add -net 172.16.61.0/24 gw 172.16.60.254
+
+//IP forward liga o 3 ao 2
+
+ping 172.16.60.254, 172.16.61.253 and 172.16.61.1
+
+//clean arp tables
+
+arp -d ipadress
+
+//ping 2 from 3 and capture in 4
