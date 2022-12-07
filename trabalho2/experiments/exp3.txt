@@ -16,7 +16,7 @@ ifconfig eth1 172.16.61.253/24
 
   echo 0 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
 
-//observe addresdes
+//observe addresses
 ifconfig 
 
 (sao diferentes)
