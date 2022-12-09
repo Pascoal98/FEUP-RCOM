@@ -35,6 +35,6 @@ ping 172.16.60.254, 172.16.61.253 and 172.16.61.1
 
 //clean arp tables
 
-arp -d ipadress
+arp -d (ipadress)
 
 //ping 2 from 3 and capture in 4

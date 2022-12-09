@@ -14,7 +14,7 @@ Restart networking service:
 
 systemctl restart networking
 
-ifconfig eth0 up 
+ifconfig eth0 up //por cen a dar
 
 ifconfig //mostra dados
 

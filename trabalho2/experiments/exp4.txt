@@ -1,19 +1,47 @@
-//delete route
+Ethe1 no routerboard a 6.1 lá em cima
+Ethe2 no routerboard a porta ni mickro tik
+
+config router:
 
 
 
-//add default 
-route add default gw ...
 
-/ip address add address=172.16.1.69/24 interface=ether2 //perpetiva do router
 
-//4 as default of 3
+Config:
+
+/ip address add address=172.16.1.69/24 interface=ether1
+/ip address add address=172.16.1.254/24 interface=ether2
+
+//add 4 as default of 3 
+route add default gw 172.16.60.254
 
 //Rc as default do tux2 e 4
 
+route add -net default gw 172.16.61.254
 /ip route add dst-address=0.0.0.0/0 gateway=172.16.61.254
 
 //add routes 
+// Rc to 3
+/ip route add dst-address=172.16.60.0/24 gateway=172.16.61.253
+
+No 2 fazer
+
+echo 0 > /proc/sys/net/ipv4/conf/eth0/accept_redirects
+echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+
+ 
+
+route del -net 172.16.60.0/24
+
+
+do 2 para 3, 
+
+antes ia para ....61.253
+
+agr q se removeu vai para o router, dps para o 4 e só dps pro 3
 
 
 
+
+dISABLE naT:
+ /ip firewall nat disable 0
