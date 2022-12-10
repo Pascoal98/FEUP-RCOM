@@ -34,9 +34,9 @@ echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
 route del -net 172.16.60.0/24
 
 
-do 2 para 3, 
+do 2 para 3, ping 
 
-antes ia para ....61.253
+antes ia para 172.16.61.253
 
 agr q se removeu vai para o router, dps para o 4 e só dps pro 3
 
@@ -45,3 +45,5 @@ agr q se removeu vai para o router, dps para o 4 e só dps pro 3
 
 dISABLE naT:
  /ip firewall nat disable 0
+
+ping 172.16.1.254 (verificar se há conectividade)

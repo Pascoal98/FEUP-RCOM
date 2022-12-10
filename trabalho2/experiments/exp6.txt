@@ -1,0 +1,11 @@
+compilar download no tux 3
+
+capture with wireshark and run
+
+when file arrives, save log
+
+
+then 
+
+
+download no 3 mas a meio começar um download no 2
