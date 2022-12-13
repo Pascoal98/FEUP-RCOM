@@ -1,3 +1,9 @@
+
+
+Em todos os tuxs correr o comando -> nano /etc/resolv.conf
+
+/ip route add dst-address = 0.0.0.0/0 gateway=172.16.Z.254
+
 search netlab.fe.up.pt
 
 nameserver 172.16.1.1

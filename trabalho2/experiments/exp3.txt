@@ -1,4 +1,9 @@
+
 //Pc 4: 
+
+e1 do tux64 ao etherX da switch
+
+(ifconfig eth1 down)
 
 ifconfig eth1 172.16.61.253/24
 
@@ -6,9 +11,11 @@ ifconfig eth1 172.16.61.253/24
 
 //add 4 to bridge 1 (n esquecer de remover a bridge q a interface tá ligada)
 
+/interface bridge port remove [find interface=etherX]
+
 /interface bridge port add bridge=bridge61 interface=etherX
  
-//Enable IP forwarding
+//Enable IP forwarding NO 4
 
   echo 1 > /proc/sys/net/ipv4/ip_forward
 

@@ -1,10 +1,12 @@
 Ethe1 no routerboard a 6.1 lá em cima
-Ethe2 no routerboard a porta ni mickro tik
+Ethe2 no routerboard a porta no mickro tik
 
 config router:
 
 
+/interface bridge port remove [find interface=etherX] (à porta q liga o switch ao router)
 
+cabo do switch console para router
 
 
 Config:
@@ -31,7 +33,7 @@ echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
 
  
 
-route del -net 172.16.60.0/24
+route delete -net 172.16.60.0/24 gw 172.16.61.253 (não é preciso para demonstração)
 
 
 do 2 para 3, ping 
@@ -44,6 +46,6 @@ agr q se removeu vai para o router, dps para o 4 e só dps pro 3
 
 
 dISABLE naT:
- /ip firewall nat disable 0
+ /ip firewall nat disable 0 (não é preciso para demonstração)
 
 ping 172.16.1.254 (verificar se há conectividade)

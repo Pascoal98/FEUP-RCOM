@@ -1,5 +1,7 @@
 compilar download no tux 3
 
+(./a.out ftp://rcom:rcom@netlab1.fe.up.pt/pipe.txt)
+
 capture with wireshark and run
 
 when file arrives, save log
