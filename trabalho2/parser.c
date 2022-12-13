@@ -40,12 +40,12 @@ ftp_t *genParse(char *url)
         parse->net->port = atoi(port);
     }
 
-    // puts(parse->user);
-    // puts(parse->pass);
-    // puts(parse->host);
-    // puts(parse->path);
-    // puts(parse->filename);
-    // printf("%d\n", parse->net->port);
+    puts(parse->user);
+    puts(parse->pass);
+    puts(parse->host);
+    puts(parse->path);
+    puts(parse->filename);
+    printf("%d\n", parse->net->port);
 
     return parse;
 }

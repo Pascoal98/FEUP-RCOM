@@ -26,14 +26,6 @@ network_t *newNet()
     return net;
 }
 
-// network_t *copyNet(network_t *fromNet) {
-//     network_t *net = malloc(sizeof(network_t));
-//     if (net == NULL)
-//         return NULL;
-//     memcpy(&fromNet, &net, sizeof(fromNet));
-//     return net;
-// }
-
 void delNet(network_t *net)
 {
     if (net != NULL)
@@ -105,9 +97,7 @@ void socketSend(network_t *net, char *buf)
     /*send a string to the server*/
     bytes = write(sockfd, buf, strlen(buf));
     bytes += write(sockfd, END_TERMINATOR, 2);
-    // if (bytes > 0)  // debug
-    // printf("Bytes escritos %d\n", bytes);  //debug
-    // else {
+
     if (bytes <= 0)
     {
         perror("write()");
@@ -128,7 +118,6 @@ void socketReadCommand(network_t *net, char *resp, int size)
             fputs("Command to big to read. Aborting.", stderr);
             exit(-1);
         }
-        // printf("Bytes lidos %d\n", bytes); //debug
         resp[bytes] = '\0';
     }
     else

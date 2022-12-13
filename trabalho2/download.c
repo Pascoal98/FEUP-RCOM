@@ -47,15 +47,12 @@ void setLogin(ftp_t *info)
     char pass_c[5 + PASS_MAX_SIZE + 1] = "PASS ";
     strcat(user_c, info->user);
     strcat(pass_c, info->pass);
-    // user_c[5 + strlen(info->user)] = '\0';
-    // pass_c[5 + strlen(info->pass)] = '\0';
 
     socketSend(info->net, user_c);
     socketReadCommand(info->net, buf, COMM_MAX_SIZE);
     socketSend(info->net, pass_c);
     ftpErrorResponse(buf, "331", 3, "Login error.\n");
     socketReadCommand(info->net, buf, COMM_MAX_SIZE);
-    // puts(buf);
     ftpErrorResponse(buf, "230", 3, "Bad login credencials.\n");
 }
 
@@ -63,8 +60,6 @@ void ftpErrorResponse(char response[], char startswith[], int n, char msg[])
 {
 
     int r;
-    // puts("inside: \n");
-    // puts(response);
     r = strncmp(startswith, response, n);
     if (r)
     {
@@ -85,21 +80,17 @@ void downloadFile(ftp_t *info)
     socketSend(info->net, "PASV");
     socketReadCommand(info->net, buf, COMM_MAX_SIZE);
     ftpErrorResponse(buf, "227", 3, "Error while entering Passive Mode.\n");
-    // puts(buf);
 
     network_t *netpasv = handlePASVresp(info->net, buf);
     socketSend(info->net, bufRETR);
     socketReadCommand(info->net, buf, COMM_MAX_SIZE);
     ftpErrorResponse(buf, "150", 3, "File not found.\n");
 
-    // readSockFileToStdout(netpasv);
-
     readSockFileToFile(netpasv, file);
 
     socketReadCommand(info->net, buf, COMM_MAX_SIZE);
     ftpErrorResponse(buf, "226", 3, "Error transferring.\n");
     fclose(file);
-    // puts(buf);
     closeSock(netpasv);
     delNet(netpasv);
 }

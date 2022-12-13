@@ -50,7 +50,6 @@ typedef struct s_ftp
 ftp_t *newParse();
 void delParse(ftp_t *parse);
 network_t *newNet();
-// network_t *copyNet(network_t *fromNet);
 void delNet(network_t *net);
 void setParseIp(ftp_t *info);
 void getSocketfd(network_t *net);
