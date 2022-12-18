@@ -1,5 +1,5 @@
 Ethe1 no routerboard a 6.1 lá em cima
-Ethe2 no routerboard a porta no mickro tik
+Ethe2 no routerboard a uma porta no mickro tik
 
 config router:
 
@@ -12,7 +12,7 @@ cabo do switch console para router
 Config:
 
 /ip address add address=172.16.1.69/24 interface=ether1
-/ip address add address=172.16.1.254/24 interface=ether2
+/ip address add address=172.16.61.254/24 interface=ether2
 
 //add 4 as default of 3 
 route add default gw 172.16.60.254
